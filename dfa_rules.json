@@ -1,0 +1,133 @@
+{
+  "initial_state": "q0",
+  "final_states": {
+    "IDENTIFIER": { "token": "IDENTIFIER" },
+    "NUMBER": { "token": "NUMBER" },
+    "REAL_NUMBER": { "token": "NUMBER" },
+    "PLUS": { "token": "ARITHMETIC_OPERATOR" },
+    "MINUS": { "token": "ARITHMETIC_OPERATOR" },
+    "STAR": { "token": "ARITHMETIC_OPERATOR" },
+    "SLASH": { "token": "ARITHMETIC_OPERATOR" },
+    "EQ": { "token": "RELATIONAL_OPERATOR" },
+    "LT": { "token": "RELATIONAL_OPERATOR" },
+    "GT": { "token": "RELATIONAL_OPERATOR" },
+    "NE": { "token": "RELATIONAL_OPERATOR" },
+    "LE": { "token": "RELATIONAL_OPERATOR" },
+    "GE": { "token": "RELATIONAL_OPERATOR" },
+    "ASSIGN": { "token": "ASSIGN_OPERATOR" },
+    "COLON": { "token": "COLON" },
+    "SEMICOLON": { "token": "SEMICOLON" },
+    "COMMA": { "token": "COMMA" },
+    "DOT": { "token": "DOT" },
+    "RANGE": { "token": "RANGE_OPERATOR" },
+    "LPAREN": { "token": "LPARENTHESIS" },
+    "RPAREN": { "token": "RPARENTHESIS" },
+    "LBRACKET": { "token": "LBRACKET" },
+    "RBRACKET": { "token": "RBRACKET" },
+    "STRING_END": { "token": "STRING_LITERAL" },
+    "COMMENT_BRACE_END": { "token": "COMMENT", "ignore": true },
+    "COMMENT_PAREN_END": { "token": "COMMENT", "ignore": true },
+    "WHITESPACE": { "token": "WHITESPACE", "ignore": true }
+  },
+  "transitions": {
+    "q0": {
+      "LETTER": "IDENTIFIER",
+      "_": "IDENTIFIER",
+      "DIGIT": "NUMBER",
+      "+": "PLUS",
+      "-": "MINUS",
+      "*": "STAR",
+      "/": "SLASH",
+      "=": "EQ",
+      "<": "LT",
+      ">": "GT",
+      ":": "COLON",
+      ";": "SEMICOLON",
+      ",": "COMMA",
+      ".": "DOT",
+      "(": "LPAREN",
+      ")": "RPAREN",
+      "[": "LBRACKET",
+      "]": "RBRACKET",
+      "'": "STRING",
+      "{": "COMMENT_BRACE",
+      "WHITESPACE": "WHITESPACE",
+      "NEWLINE": "WHITESPACE"
+    },
+    "IDENTIFIER": {
+      "LETTER": "IDENTIFIER",
+      "DIGIT": "IDENTIFIER",
+      "_": "IDENTIFIER"
+    },
+    "NUMBER": {
+      "DIGIT": "NUMBER",
+      "DOT": "NUMBER_DOT"
+    },
+    "REAL_NUMBER": {
+      "DIGIT": "REAL_NUMBER"
+    },
+    "LT": {
+      "=": "LE",
+      ">": "NE"
+    },
+    "GT": {
+      "=": "GE"
+    },
+    "COLON": {
+      "=": "ASSIGN"
+    },
+    "DOT": {
+      ".": "RANGE"
+    },
+    "NUMBER_DOT": {
+      "DIGIT": "REAL_NUMBER"
+    },
+    "LPAREN": {
+      "*": "COMMENT_PAREN"
+    },
+    "COMMENT_BRACE": {
+      "ANY": "COMMENT_BRACE",
+      "NEWLINE": "COMMENT_BRACE",
+      "}": "COMMENT_BRACE_END"
+    },
+    "COMMENT_PAREN": {
+      "*": "COMMENT_PAREN_ASTERISK",
+      "ANY": "COMMENT_PAREN"
+    },
+    "COMMENT_PAREN_ASTERISK": {
+      ")": "COMMENT_PAREN_END",
+      "*": "COMMENT_PAREN_ASTERISK",
+      "ANY": "COMMENT_PAREN"
+    },
+    "STRING": {
+      "ANY": "STRING",
+      "'": "STRING_END"
+    }
+  },
+  "KEYWORDS": [
+    "program",
+    "var",
+    "begin",
+    "end",
+    "if",
+    "then",
+    "else",
+    "while",
+    "do",
+    "for",
+    "to",
+    "downto",
+    "integer",
+    "real",
+    "boolean",
+    "char",
+    "array",
+    "of",
+    "procedure",
+    "function",
+    "const",
+    "type"
+  ],
+  "WORD_ARITHMETIC": ["div", "mod"],
+  "WORD_LOGICAL": ["and", "or", "not"]
+}
