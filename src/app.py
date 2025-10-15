@@ -1,6 +1,6 @@
 import sys
-from .lexer import Lexer
-from .utils import load_dfa_rules
+# from .lexer import Lexer
+from utils import load_dfa_rules, read_source_code, process_input_with_dfa
 
 def app():
     """
@@ -14,14 +14,28 @@ def app():
     5. Menjalankan proses tokenisasi.
     6. Mencetak hasilnya ke konsol dengan format yang sesuai.
     """
+
     # Langkah 1: Validasi input dari command line
-    pass
+    if len(sys.argv) != 2:
+        print("Usage: python app.py <source_file.pas>")
+        sys.exit(1)
+
+    source_path = sys.argv[1]
+    dfa_path = "dfa_rules.json"
 
     # Langkah 2: Baca konten file source code
-    pass
+    source = read_source_code(source_path)
     
     # Langkah 3: Muat aturan DFA
-    pass
+    dfa_rules = load_dfa_rules(dfa_path)
+
+    lines = source.splitlines()
+    print("=== Simulasi DFA ===")
+    for i, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        print(f"\n>> Line {i}: {line}")
+        process_input_with_dfa(line, dfa_rules)
 
     # Langkah 4: Buat objek Lexer dan jalankan tokenisasi
     pass
