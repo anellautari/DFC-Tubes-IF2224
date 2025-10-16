@@ -57,7 +57,7 @@
     "IDENTIFIER": {
       "LETTER": "IDENTIFIER",
       "DIGIT": "IDENTIFIER",
-      "_": "IDENTIFIER"
+      "UNDERSCORE": "IDENTIFIER"
     },
     "NUMBER": {
       "DIGIT": "NUMBER",
