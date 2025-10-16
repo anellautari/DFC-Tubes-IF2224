@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+
+@dataclass
 class Token:
     """
     Sebuah kelas untuk merepresentasikan token leksikal.
@@ -6,16 +9,10 @@ class Token:
     dan nomor baris tempat token itu ditemukan dalam kode sumber.
     Ini membantu untuk pelacakan dan pelaporan kesalahan (error reporting) nanti.
     """
-    def __init__(self, token_type: str, value: str, line: int):
-        """
-        Inisialisasi objek Token.
-        
-        Args:
-            token_type (str): Tipe dari token, seperti 'KEYWORD' atau 'NUMBER'.
-            value (str): String literal dari token yang diambil dari kode sumber.
-            line (int): Nomor baris asal token.
-        """
-        pass
+    token_type: str
+    value: str
+    line: int
+    column: int
 
     def __repr__(self) -> str:
         """
@@ -25,4 +22,4 @@ class Token:
         yang berhasil di-scan sesuai format output yang diminta.
         Contoh: "KEYWORD(program)" atau "NUMBER(123)".
         """
-        pass
+        return f"{self.token_type}({self.value})"

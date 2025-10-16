@@ -1,11 +1,9 @@
-from .pascal_token import Token
-from .utils import get_char_category
+from pascal_token import Token
+from dfa import DFA
 
 class Lexer:
     """
-    Kelas utama Lexical Analyzer (Lexer).
-    
-    Tugasnya adalah mengubah string kode sumber mentah menjadi daftar objek Token
+    Lexer: mengubah string kode sumber mentah menjadi daftar objek Token
     berdasarkan aturan yang didefinisikan dalam file DFA.
     """
     def __init__(self, source_code: str, dfa_rules: dict):
@@ -16,76 +14,121 @@ class Lexer:
             source_code (str): Seluruh kode sumber PASCAL-S sebagai satu string.
             dfa_rules (dict): Aturan DFA yang sudah di-load dari file JSON.
         """
-        pass
+        self.source_code = source_code
+        self.dfa_rules = dfa_rules
+        self.current_pos = 0
+        self.current_line = 1
+        self.current_col = 1
+        
+        self.keywords = set(dfa_rules.get("KEYWORDS", []))
+        self.word_arithmetic = set(dfa_rules.get("WORD_ARITHMETIC", []))
+        self.word_logical = set(dfa_rules.get("WORD_LOGICAL", []))
 
     def _get_next_token(self) -> Token | None:
         """
-        Menganalisis kode sumber dari posisi saat ini untuk menemukan satu token berikutnya.
-        
-        Ini adalah implementasi inti dari state machine DFA. Fungsi ini akan:
-        1. Mengabaikan karakter yang tidak relevan (seperti spasi atau komentar) terlebih dahulu.
-        2. Memulai dari 'initial_state' DFA.
-        3. Membaca karakter satu per satu dan berpindah state sesuai aturan transisi.
-        4. Berhenti ketika mencapai state akhir (final state) atau ketika tidak ada
-           transisi yang valid untuk karakter berikutnya.
-        5. Mengembalikan token yang berhasil dikenali atau None jika sudah di akhir file.
+        Menganalisis kode sumber dari posisi saat ini untuk menemukan satu token berikutnya
+        menggunakan aturan 'longest match'.
         """
-        pass
+        if self.current_pos >= len(self.source_code):
+            return None  
 
-    def _finalize_token(self, lexeme: str, final_state: str) -> Token:
-        """
-        Membuat objek Token dari lexeme yang sudah dikenali.
+        start_pos = self.current_pos
+        start_line = self.current_line
+        start_col = self.current_col
+
+        last_final_state = None
+        last_final_pos = -1
         
-        Setelah DFA berhenti di state akhir, fungsi ini dipanggil untuk:
-        1. Menentukan tipe token berdasarkan state akhir.
-        2. Memeriksa kasus khusus, misalnya jika sebuah 'IDENTIFIER' sebenarnya adalah 'KEYWORD'.
-        3. Membuat dan mengembalikan objek Token yang sudah jadi.
-        
-        Args:
-            lexeme (str): Teks token yang berhasil diidentifikasi (misal: 'begin', ':=', '123').
-            final_state (str): Nama state akhir tempat DFA berhenti (misal: 'IDENTIFIER', 'ASSIGN').
+        current_state = self.dfa_rules["initial_state"]
+        pos_tracker = self.current_pos
+
+        while pos_tracker < len(self.source_code):
+            char = self.source_code[pos_tracker]
             
-        Returns:
-            Token: Objek Token yang telah diformat dengan benar.
-        """
-        pass
-
-    def _is_keyword(self, lexeme: str) -> bool:
-        """
-        Pemeriksa khusus untuk menentukan apakah sebuah lexeme (yang awalnya
-        diidentifikasi sebagai IDENTIFIER) sebenarnya adalah sebuah KEYWORD atau
-        operator berbentuk kata (seperti 'div', 'mod', 'and').
-        
-        Args:
-            lexeme (str): Teks yang akan diperiksa.
+            category = DFA.get_char_category(char)
             
-        Returns:
-            bool: True jika lexeme adalah keyword, False jika tidak.
-        """
-        pass
+            next_state = DFA.simulate_dfa_step(current_state, char, self.dfa_rules)
 
-    def _handle_error(self, char: str):
-        """
-        Menangani situasi ketika DFA menemukan karakter yang tidak terduga
-        atau terjebak dalam state non-final.
+            if next_state is None:
+                break
+            
+            current_state = next_state
+            pos_tracker += 1
+
+            if current_state in self.dfa_rules["final_states"]:
+                last_final_state = current_state
+                last_final_pos = pos_tracker
+
+        if last_final_state is None:
+            if not self.source_code[start_pos].isspace():
+                self._handle_error(self.source_code[start_pos], start_line, start_col)
+            
+            self._advance_pos() 
+            return None
+
+        lexeme = self.source_code[start_pos:last_final_pos]
         
-        Fungsi ini akan mencetak pesan error yang informatif, termasuk karakter
-        yang salah dan nomor barisnya, untuk membantu pengguna memperbaiki kode mereka.
+        self._set_pos_to(last_final_pos)
         
-        Args:
-            char (str): Karakter yang menyebabkan error.
+        return self._finalize_token(lexeme, last_final_state, start_line, start_col)
+
+    def _finalize_token(self, lexeme: str, final_state: str, line: int, col: int) -> Token | None:
         """
-        pass
+        Membuat objek Token, melakukan lookup keyword, dan mengecek flag 'ignore'.
+        """
+        token_info = self.dfa_rules["final_states"][final_state]
+        token_type = token_info["token"]
+
+        if token_type == "IDENTIFIER":
+            lexeme_lower = lexeme.lower()
+            if lexeme_lower in self.keywords:
+                token_type = "KEYWORD"
+            elif lexeme_lower in self.word_arithmetic:
+                token_type = "ARITHMETIC_OPERATOR"
+            elif lexeme_lower in self.word_logical:
+                token_type = "LOGICAL_OPERATOR"
+        
+        if token_info.get("ignore", False):
+            return None  
+
+        return Token(token_type=token_type, value=lexeme, line=line, column=col)
+
+    def _handle_error(self, char: str, line: int, col: int):
+        """
+        Menangani error karakter tidak dikenal.
+        """
+        print(f"Error: Invalid character '{char}' at Line {line}:{col}")
+
+    def _advance_pos(self):
+        """Helper untuk memajukan lexer 1 karakter dan update line/col."""
+        if self.current_pos >= len(self.source_code):
+            return
+
+        char = self.source_code[self.current_pos]
+        if char == '\n':
+            self.current_line += 1
+            self.current_col = 1
+        else:
+            self.current_col += 1
+        self.current_pos += 1
+
+    def _set_pos_to(self, new_pos: int):
+        """Helper untuk menggerakkan lexer ke posisi baru (setelah token) dan update line/col."""
+        while self.current_pos < new_pos:
+            self._advance_pos()
 
     def tokenize(self) -> list[Token]:
         """
-        Fungsi publik utama untuk menjalankan keseluruhan proses tokenisasi.
-        
-        Fungsi ini akan memanggil `_get_next_token` berulang kali sampai seluruh
-        kode sumber selesai dianalisis dan mengumpulkan semua token yang valid
-        ke dalam sebuah list.
-        
-        Returns:
-            list[Token]: Daftar semua token yang berhasil dianalisis dari kode sumber.
+        Fungsi publik utama untuk menjalankan keseluruhan proses tokenisasi. 
         """
-        pass
+        tokens = []
+        while True:
+            token = self._get_next_token()
+            if token is None:
+                if self.current_pos >= len(self.source_code):
+                    break
+                continue  
+            
+            tokens.append(token)
+            
+        return tokens
