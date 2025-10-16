@@ -57,14 +57,18 @@
     "IDENTIFIER": {
       "LETTER": "IDENTIFIER",
       "DIGIT": "IDENTIFIER",
-      "_": "IDENTIFIER"
+      "UNDERSCORE": "IDENTIFIER"
     },
     "NUMBER": {
       "DIGIT": "NUMBER",
-      "DOT": "NUMBER_DOT"
+      ".": "NUMBER_DOT",
+      "e": "EXP",
+      "E": "EXP"
     },
     "REAL_NUMBER": {
-      "DIGIT": "REAL_NUMBER"
+      "DIGIT": "REAL_NUMBER",
+      "e": "EXP",
+      "E": "EXP"
     },
     "LT": {
       "=": "LE",
@@ -80,6 +84,14 @@
       ".": "RANGE"
     },
     "NUMBER_DOT": {
+      "DIGIT": "REAL_NUMBER"
+    },
+    "EXP": {
+      "+": "EXP_SIGN",
+      "-": "EXP_SIGN",
+      "DIGIT": "REAL_NUMBER"
+    },
+    "EXP_SIGN": {
       "DIGIT": "REAL_NUMBER"
     },
     "LPAREN": {
@@ -98,6 +110,9 @@
       ")": "COMMENT_PAREN_END",
       "*": "COMMENT_PAREN_ASTERISK",
       "ANY": "COMMENT_PAREN"
+    },
+    "STRING_END": {
+      "'": "STRING"
     },
     "STRING": {
       "ANY": "STRING",
@@ -126,7 +141,9 @@
     "procedure",
     "function",
     "const",
-    "type"
+    "type",
+    "true",
+    "false"
   ],
   "WORD_ARITHMETIC": ["div", "mod"],
   "WORD_LOGICAL": ["and", "or", "not"]
