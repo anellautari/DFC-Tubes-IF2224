@@ -1,6 +1,7 @@
 import sys
 # from .lexer import Lexer
-from utils import load_dfa_rules, read_source_code, scan_tokens
+from utils import load_dfa_rules, read_source_code
+from dfa import DFA
 
 def app():
     """
@@ -31,7 +32,7 @@ def app():
     lines = source.splitlines()
 
     for i, line in enumerate(lines, start=1):
-        tokens = scan_tokens(line, dfa_rules)
+        tokens = DFA.scan_tokens(line, dfa_rules)
         # DEBUG (nanti janlup hapus)
         print(f"Line {i} tokens: {tokens}\n")
 
