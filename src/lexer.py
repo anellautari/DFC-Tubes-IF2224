@@ -88,6 +88,9 @@ class Lexer:
             elif lexeme_lower in self.word_logical:
                 token_type = "LOGICAL_OPERATOR"
         
+        if token_type == "STRING_LITERAL":
+            lexeme = lexeme.replace("''", "'")
+        
         if token_info.get("ignore", False):
             return None  
 
