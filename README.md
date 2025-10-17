@@ -61,7 +61,7 @@ python src/main.py [path_ke_file_pascal]
 ```
 Contoh:
 ```bash
-python src/main.py test/milestone-1/input-1.pas
+python src/main.py test/milestone-1/input/1-basic.pas
 ```
 
 Untuk menyimpan hasil tokenisasi ke dalam file '.txt', gunakan perintah berikut:
@@ -70,7 +70,7 @@ python src/main.py [path_ke_file_pascal] > [path_ke_file_output]
 ```
 Contoh:
 ```bash
-python src/main.py test/milestone-1/input-1.pas > test/milestone-1/output-1.txt
+python src/main.py test/milestone-1/input/1-basic.pas > test/milestone-1/output/1-basic.txt
 ```
 
 ## Struktur Proyek
@@ -86,7 +86,8 @@ DFC-Tubes-IF2224/
 │   └── utils.py                  # Fungsi helper (I/O file)
 ├── test/
 │   └── milestone-1/
-│       └── input-1.pas
+│       └── input/                # Berisi file .pas
+│       └── output/
 ├── doc/
 │   ├── Laporan-1-DFC.pdf   
 │   └── Diagram-1-DFC.pdf         # Diagram Transisi DFA
