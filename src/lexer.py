@@ -89,9 +89,11 @@ class Lexer:
                 token_type = "LOGICAL_OPERATOR"
         
         if token_type == "STRING_LITERAL":
-            lexeme = lexeme.replace("''", "'")
-            if len(lexeme[1:-1]) <= 1:
+            string_content = lexeme[1:-1]
+            string_content = string_content.replace("\'\'", "\'")
+            if len(string_content) <= 1:
                 token_type = "CHAR_LITERAL"
+            lexeme = f"\'{string_content}\'"
         
         if token_info.get("ignore", False):
             return None  
