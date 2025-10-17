@@ -45,8 +45,6 @@ class Lexer:
         while pos_tracker < len(self.source_code):
             char = self.source_code[pos_tracker]
             
-            category = DFA.get_char_category(char)
-            
             next_state = DFA.simulate_dfa_step(current_state, char, self.dfa_rules)
 
             if next_state is None:
