@@ -50,7 +50,7 @@ Pastikan Anda memiliki Python versi 3.10 atau yang lebih baru terinstal di siste
 Proyek ini tidak memerlukan instalasi pustaka eksternal. Cukup *clone repository* ini:
 
 ```bash
-git clone https://github.com/anellautari/DFC-Tubes-IF2224
+git clone https://github.com/anellautari/DFC-Tubes-IF2224.git
 cd DFC-Tubes-IF2224
 ```
 ## Cara Penggunaan
