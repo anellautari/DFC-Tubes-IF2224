@@ -45,8 +45,6 @@ class Lexer:
         while pos_tracker < len(self.source_code):
             char = self.source_code[pos_tracker]
             
-            category = DFA.get_char_category(char)
-            
             next_state = DFA.simulate_dfa_step(current_state, char, self.dfa_rules)
 
             if next_state is None:
@@ -87,6 +85,13 @@ class Lexer:
                 token_type = "ARITHMETIC_OPERATOR"
             elif lexeme_lower in self.word_logical:
                 token_type = "LOGICAL_OPERATOR"
+        
+        if token_type == "STRING_LITERAL":
+            string_content = lexeme[1:-1]
+            string_content = string_content.replace("\'\'", "\'")
+            if len(string_content) <= 1:
+                token_type = "CHAR_LITERAL"
+            lexeme = f"\'{string_content}\'"
         
         if token_info.get("ignore", False):
             return None  
