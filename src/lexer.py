@@ -90,6 +90,8 @@ class Lexer:
         
         if token_type == "STRING_LITERAL":
             lexeme = lexeme.replace("''", "'")
+            if len(lexeme[1:-1]) <= 1:
+                token_type = "CHAR_LITERAL"
         
         if token_info.get("ignore", False):
             return None  
