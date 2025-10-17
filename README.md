@@ -55,13 +55,22 @@ cd DFC-Tubes-IF2224
 ```
 ## Cara Penggunaan
 
-**Format Perintah:**
+Untuk hanya menjalankan program, gunakan perintah berikut:
 ```bash
-python src.main [path_ke_file_pascal]
+python src/main.py [path_ke_file_pascal]
 ```
 Contoh:
 ```bash
-python src.main test/milestone-1/input-1.pas
+python src/main.py test/milestone-1/input-1.pas
+```
+
+Untuk menyimpan hasil tokenisasi ke dalam file '.txt', gunakan perintah berikut:
+```bash
+python src/main.py [path_ke_file_pascal] > [path_ke_file_output]
+```
+Contoh:
+```bash
+python src/main.py test/milestone-1/input-1.pas > test/milestone-1/output-1.txt
 ```
 
 ## Struktur Proyek
