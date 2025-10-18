@@ -124,12 +124,20 @@ class Lexer:
             return
 
         char = self.source_code[self.current_pos]
-        if char == '\n':
+        
+        if char == '\r':
             self.current_line += 1
             self.current_col = 1
+            self.current_pos += 1
+            if self.current_pos < len(self.source_code) and self.source_code[self.current_pos] == '\n':
+                self.current_pos += 1
+        elif char == '\n':
+            self.current_line += 1
+            self.current_col = 1
+            self.current_pos += 1
         else:
             self.current_col += 1
-        self.current_pos += 1
+            self.current_pos += 1
 
     def _set_pos_to(self, new_pos: int):
         """Helper untuk menggerakkan lexer ke posisi baru (setelah token) dan update line/col."""
