@@ -19,6 +19,7 @@ class Lexer:
         self.current_pos = 0
         self.current_line = 1
         self.current_col = 1
+        self.fatal_error = False
         
         self.keywords = set(dfa_rules.get("KEYWORDS", []))
         self.word_arithmetic = set(dfa_rules.get("WORD_ARITHMETIC", []))
@@ -56,6 +57,19 @@ class Lexer:
             if current_state in self.dfa_rules["final_states"]:
                 last_final_state = current_state
                 last_final_pos = pos_tracker
+
+        if last_final_state and self.dfa_rules["final_states"][last_final_state].get("is_error", False):
+            error_type = self.dfa_rules["final_states"][last_final_state].get("error_type", "UNKNOWN")
+            if error_type == "UNTERMINATED_STRING":
+                print(f"Error: Unterminated string literal at Line {start_line}:{start_col}")
+            self.fatal_error = True
+            self._advance_pos()
+            return None
+
+        if pos_tracker >= len(self.source_code) and current_state == "STRING":
+            print(f"Error: Unterminated string literal at Line {start_line}:{start_col}")
+            self.fatal_error = True
+            return None
 
         if last_final_state is None:
             if not self.source_code[start_pos].isspace():
@@ -129,6 +143,10 @@ class Lexer:
         tokens = []
         while True:
             token = self._get_next_token()
+            
+            if self.fatal_error:
+                break
+                
             if token is None:
                 if self.current_pos >= len(self.source_code):
                     break

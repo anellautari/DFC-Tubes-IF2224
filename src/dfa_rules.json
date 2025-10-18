@@ -25,6 +25,7 @@
     "LBRACKET": { "token": "LBRACKET" },
     "RBRACKET": { "token": "RBRACKET" },
     "STRING_END": { "token": "STRING_LITERAL" },
+    "STRING_ERROR": { "token": "ERROR", "is_error": true, "error_type": "UNTERMINATED_STRING" },
     "COMMENT_BRACE_END": { "token": "COMMENT", "ignore": true },
     "COMMENT_PAREN_END": { "token": "COMMENT", "ignore": true },
     "WHITESPACE": { "token": "WHITESPACE", "ignore": true }
@@ -116,7 +117,8 @@
     },
     "STRING": {
       "ANY": "STRING",
-      "'": "STRING_END"
+      "'": "STRING_END",
+      "NEWLINE": "STRING_ERROR"
     }
   },
   "KEYWORDS": [
