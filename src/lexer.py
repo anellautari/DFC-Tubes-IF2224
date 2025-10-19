@@ -42,6 +42,7 @@ class Lexer:
         
         current_state = self.dfa_rules["initial_state"]
         pos_tracker = self.current_pos
+        next_state = None
 
         while pos_tracker < len(self.source_code):
             char = self.source_code[pos_tracker]
@@ -79,6 +80,16 @@ class Lexer:
             return None
 
         lexeme = self.source_code[start_pos:last_final_pos]
+        
+        if pos_tracker < len(self.source_code) and last_final_pos < len(self.source_code):
+            next_char = self.source_code[last_final_pos]
+            token_info = self.dfa_rules["final_states"][last_final_state]
+            
+            if token_info["token"] == "NUMBER" and (next_char.isalpha() or next_char == '_'):
+                if next_state is None: 
+                    self._handle_error(next_char, start_line, start_col + (last_final_pos - start_pos))
+                    self.fatal_error = True
+                    return None
         
         self._set_pos_to(last_final_pos)
         
