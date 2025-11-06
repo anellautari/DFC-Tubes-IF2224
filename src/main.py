@@ -1,8 +1,4 @@
-# src/main.py
-
 import sys
-# from .lexer import Lexer
-# from .utils import load_dfa_rules
 from app import app
 
 if __name__ == "__main__":

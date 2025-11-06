@@ -1,38 +1,40 @@
 import sys
 from lexer import Lexer
-from utils import load_dfa_rules, read_source_code
+from utils import load_dfa_rules, read_source_code, load_tokens_from_file
 
 def app():
-    """
-    Fungsi utama yang mengorkestrasi seluruh alur kerja program.
-    
-    Tugasnya meliputi:
-    1. Memvalidasi argumen command-line.
-    2. Membaca file input kode sumber `.pas`.
-    3. Memuat aturan DFA dari file JSON menggunakan fungsi dari utils.
-    4. Membuat instance dari kelas Lexer. 
-    5. Menjalankan proses tokenisasi.
-    6. Mencetak hasilnya ke konsol dengan format yang sesuai.
-    """
+    # input .pas: Menjalankan Lexer -> Parser (pake list token dari memory)
+    # input .txt: Menjalankan Parser (pake list token dari file .txt)
 
-    # Langkah 1: Validasi input dari command line
+    # Validasi input dari command line
     if len(sys.argv) != 2:
-        print("Usage: python app.py <source_file.pas>")
+        print("Usage: python -m src.main <source_file.pas | token_file.txt>")
         sys.exit(1)
 
     source_path = sys.argv[1]
-    dfa_path = "src/dfa_rules.json"
+    tokens = []
 
-    # Langkah 2: Baca konten file source code 
-    source = read_source_code(source_path)
-    
-    # Langkah 3: Muat aturan DFA 
-    dfa_rules = load_dfa_rules(dfa_path)
+    if source_path.endswith(".pas"):
+        # Input adalah source code .pas -> jalanin lexer untuk mendapatkan list[Token] in-memory
+        
+        dfa_path = "src/dfa_rules.json"
+        source = read_source_code(source_path)
+        dfa_rules = load_dfa_rules(dfa_path)
+        
+        lexer = Lexer(source, dfa_rules)
+        tokens = lexer.tokenize()
+        
+        for token in tokens:
+           print(token)
 
-    # Langkah 4: Buat objek Lexer dan jalankan tokenisasi
-    lexer = Lexer(source, dfa_rules)
-    tokens = lexer.tokenize()
+    elif source_path.endswith(".txt"):
+        # Input adalah file token .txt -> baca file .txt dan mem-parsing-nya menjadi list[Token]
+        
+        tokens = load_tokens_from_file(source_path)
+        
+        for token in tokens:
+           print(token)
 
-    # Langkah 5: Cetak setiap token dalam daftar hasil
-    for token in tokens:
-        print(token)
+    else:
+        print("Error: Input file harus berekstensi .pas atau .txt")
+        sys.exit(1)

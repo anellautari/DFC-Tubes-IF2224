@@ -73,7 +73,7 @@ class Lexer:
             return None
 
         if last_final_state is None:
-            if not self.source_code[start_pos].isspace():
+            if start_pos < len(self.source_code) and not self.source_code[start_pos].isspace():
                 self._handle_error(self.source_code[start_pos], start_line, start_col)
             
             self._advance_pos() 

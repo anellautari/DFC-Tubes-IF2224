@@ -22,4 +22,4 @@ class Token:
         yang berhasil di-scan sesuai format output yang diminta.
         Contoh: "KEYWORD(program)" atau "NUMBER(123)".
         """
-        return f"{self.token_type}({self.value})"
+        return f"{self.token_type}({self.value}) @ {self.line}:{self.column}"

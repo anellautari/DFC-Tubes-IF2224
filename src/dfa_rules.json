@@ -149,7 +149,7 @@
     "kasus",
     "rekaman",
     "ulangi",
-    "sampai",
+    "sampai"
   ],
   "WORD_ARITHMETIC": ["bagi", "mod"],
   "WORD_LOGICAL": ["dan", "atau", "tidak"]
