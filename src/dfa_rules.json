@@ -145,8 +145,12 @@
     "konstanta",
     "tipe",
     "true",
-    "false"
+    "false",
+    "kasus",
+    "rekaman",
+    "ulangi",
+    "sampai",
   ],
-  "WORD_ARITHMETIC": ["div", "mod"],
-  "WORD_LOGICAL": ["and", "or", "not"]
+  "WORD_ARITHMETIC": ["bagi", "mod"],
+  "WORD_LOGICAL": ["dan", "atau", "tidak"]
 }
