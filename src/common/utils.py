@@ -1,9 +1,10 @@
+import os
 import json
 import sys
 import re
-from pascal_token import Token
+from .pascal_token import Token
 
-def load_dfa_rules(filepath: str) -> dict:
+def load_dfa_rules(filepath: str | None = None) -> dict:
     """
     Membaca file aturan DFA dalam format JSON dan mengubahnya menjadi dictionary.
     
@@ -18,10 +19,14 @@ def load_dfa_rules(filepath: str) -> dict:
         dict: Dictionary yang berisi aturan transisi, state awal, dan final states.
               Mengembalikan None jika terjadi error.
     """
+    if filepath is None:
+        current_dir = os.path.dirname(__file__) 
+        project_root = os.path.dirname(current_dir)
+        filepath = os.path.join(project_root, "lexer", "dfa_rules.json")
+
     try:
         with open(filepath, 'r', encoding='utf-8') as file:
-            dfa_rules = json.load(file)
-            return dfa_rules
+            return json.load(file)
     except FileNotFoundError:
         print(f"Error: File '{filepath}' tidak ditemukan.")
         sys.exit(1)
@@ -56,19 +61,25 @@ def load_tokens_from_file(filepath: str) -> list[Token]:
     token_regex = re.compile(r"(\w+)\((.*?)\) @ (\d+):(\d+)")
     
     try:
-        with open(filepath, 'r', encoding='utf-16') as f:
-            for i, line_text in enumerate(f, 1):
-                match = token_regex.match(line_text.strip())
-                if match:
-                    token_type, value, line, col = match.groups()
-                    tokens.append(Token(
-                        token_type=token_type,
-                        value=value,
-                        line=int(line),
-                        column=int(col)
-                    ))
-                elif line_text.strip(): # baris tidak kosong tapi tidak match
-                    print(f"Warning: Baris {i} di file token tidak valid: {line_text.strip()}")
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+        except UnicodeError:
+            with open(filepath, 'r', encoding='utf-16') as f:
+                lines = f.readlines()
+
+        for i, line_text in enumerate(lines, 1):
+            match = token_regex.match(line_text.strip())
+            if match:
+                token_type, value, line, col = match.groups()
+                tokens.append(Token(
+                    token_type=token_type,
+                    value=value,
+                    line=int(line),
+                    column=int(col)
+                ))
+            elif line_text.strip(): # baris tidak kosong tapi tidak match
+                print(f"Warning: Baris {i} di file token tidak valid: {line_text.strip()}")
         return tokens
     except FileNotFoundError:
         print(f"Error: File token '{filepath}' tidak ditemukan.")
