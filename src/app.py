@@ -1,6 +1,6 @@
 import sys
-from lexer import Lexer
-from utils import load_dfa_rules, read_source_code, load_tokens_from_file
+from src.lexer.lexer import Lexer
+from src.common.utils import load_dfa_rules, read_source_code, load_tokens_from_file
 
 def app():
     # input .pas: Menjalankan Lexer -> Parser (pake list token dari memory)

@@ -1,4 +1,4 @@
-from pascal_token import Token
+from src.common.pascal_token import Token
 from dfa import DFA
 
 class Lexer:
