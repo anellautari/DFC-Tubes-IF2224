@@ -1,0 +1,3 @@
+Memulai parsing program...
+Syntax error: expected SEMICOLON, but got KEYWORD(variabel)
+Selesai parse_program sementara
