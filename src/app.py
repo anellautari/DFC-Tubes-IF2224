@@ -1,6 +1,7 @@
 import sys
-from src.lexer.lexer import Lexer
-from src.common.utils import load_dfa_rules, read_source_code, load_tokens_from_file
+from lexer.lexer import Lexer
+from common.utils import load_dfa_rules, read_source_code, load_tokens_from_file
+from parser.parser import Parser
 
 def app():
     # input .pas: Menjalankan Lexer -> Parser (pake list token dari memory)
@@ -17,9 +18,8 @@ def app():
     if source_path.endswith(".pas"):
         # Input adalah source code .pas -> jalanin lexer untuk mendapatkan list[Token] in-memory
         
-        dfa_path = "src/dfa_rules.json"
         source = read_source_code(source_path)
-        dfa_rules = load_dfa_rules(dfa_path)
+        dfa_rules = load_dfa_rules()
         
         lexer = Lexer(source, dfa_rules)
         tokens = lexer.tokenize()
@@ -32,8 +32,8 @@ def app():
         
         tokens = load_tokens_from_file(source_path)
         
-        for token in tokens:
-           print(token)
+        parser = Parser(tokens)
+        parser.parse_program()
 
     else:
         print("Error: Input file harus berekstensi .pas atau .txt")
