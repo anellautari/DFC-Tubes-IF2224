@@ -42,16 +42,23 @@ class Parser:
         print(msg)
         self.errors.append(msg)
 
-
-    # STUB FUNGSI GRAMMAR LEVEL ATAS
     def parse_program(self):
         # Aturan grammar:
         # <program> ::= <program-header> <declaration-part> <compound-statement> DOT
+        pass
+    
+    # STUB FUNGSI GRAMMAR LEVEL ATAS
+    def parse_program_header(self):
+        # Aturan grammar:
+        # <program-header> ::= KEYWORD(program) + IDENTIFIER + SEMICOLON
 
         # fungsi sementara, cuma ngecek validasi token pertama (nanti sesuaikan saja)
         print("Memulai parsing program...")
         token = self.match_token("KEYWORD", "program")
         if token:
-            ident = self.match_token("IDENTIFIER")
+            self.match_token("IDENTIFIER")
             self.match_token("SEMICOLON")
         print("Selesai parse_program sementara")        
+    
+    def parse_block(self):
+        pass
