@@ -137,3 +137,106 @@ class Parser:
             node.add_children(Node("IDENTIFIER", self.consume_token()))
 
         return node
+    
+    def parse_assignment_statement(self):
+        # <assignment-statement> ::= IDENTIFIER ASSIGN_OPERATOR <expression>
+        node = Node("<assignment-statement>")
+        
+        # IDENTIFIER
+        ident = self.match_token("IDENTIFIER")
+        if not ident: return None
+        node.add_children(Node("IDENTIFIER", ident))
+        
+        # ASSIGN_OPERATOR
+        op = self.match_token("ASSIGN_OPERATOR", ":=")
+        if not op: return None
+        node.add_children(Node("ASSIGN_OPERATOR", op))
+        
+        expr_node = self.parse_expression()
+        if not expr_node:
+            self.error("expression", self.peek().token_type if self.peek() else "EOF")
+            return None
+        node.add_children(expr_node)
+        
+        return node
+
+    def parse_procedure_call(self):
+        # <procedure-call> ::= IDENTIFIER [ LPARENTHESIS <parameter-list> RPARENTHESIS ]
+        node = Node("<procedure-function-call>")
+        
+        # IDENTIFIER
+        ident = self.match_token("IDENTIFIER")
+        if not ident: return None
+        node.add_children(Node("IDENTIFIER", ident))
+        
+        # [ ... ] 
+        if self.peek() and self.peek().token_type == "LPARENTHESIS":
+            lparen = self.consume_token() 
+            node.add_children(Node("LPARENTHESIS", lparen))
+            
+            param_list_node = self.parse_parameter_list()
+            if param_list_node:
+                node.add_children(param_list_node)
+            
+            rparen = self.match_token("RPARENTHESIS", ")")
+            if not rparen: return None
+            node.add_children(Node("RPARENTHESIS", rparen))
+            
+        return node
+
+    def parse_function_call(self):
+        # <function-call> ::= IDENTIFIER LPARENTHESIS [ <parameter-list> ] RPARENTHESIS
+        node = Node("<function-call>")
+        
+        # IDENTIFIER
+        ident = self.match_token("IDENTIFIER")
+        if not ident: return None
+        node.add_children(Node("IDENTIFIER", ident))
+        
+        # LPARENTHESIS
+        lparen = self.match_token("LPARENTHESIS", "(")
+        if not lparen: return None
+        node.add_children(Node("LPARENTHESIS", lparen))
+        
+        if self.peek() and self.peek().token_type != "RPARENTHESIS":
+            param_list_node = self.parse_parameter_list()
+            if param_list_node:
+                node.add_children(param_list_node)
+        
+        # RPARENTHESIS
+        rparen = self.match_token("RPARENTHESIS", ")")
+        if not rparen: return None
+        node.add_children(Node("RPARENTHESIS", rparen))
+        
+        return node
+    
+    def parse_parameter_list(self):
+        # <parameter-list> ::= <expression> { COMMA <expression> }
+        node = Node("<parameter-list>")
+        
+        # <expression> pertama
+        expr_node = self.parse_expression()
+        if not expr_node:
+            # List parameter boleh kosong (misal: writeln())
+            return None 
+        
+        node.add_children(expr_node)
+        
+        # { COMMA <expression> }
+        while self.peek() and self.peek().token_type == "COMMA":
+            comma_node = Node("COMMA", self.consume_token())
+            node.add_children(comma_node)
+            
+            expr_node = self.parse_expression()
+            if not expr_node:
+                self.error("expression", self.peek().token_type if self.peek() else "EOF")
+                return None # Error, koma harus diikuti ekspresi
+            node.add_children(expr_node)
+            
+        return node
+
+    def parse_expression(self):
+        pass
+    
+    def parse_simple_expression(self):
+        pass
