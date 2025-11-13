@@ -38,7 +38,7 @@ class Parser:
             return None
         
     def error(self, expected: str, actual: str):
-        # nampilin pesan error sintaks yg informatif
+        # nampilin pesan error sintaks
         msg = f"Syntax error: expected {expected}, but got {actual}"
         print(msg)
         self.errors.append(msg)       
@@ -83,58 +83,384 @@ class Parser:
         node.add_children(Node("IDENTIFIER", self.match_token("IDENTIFIER")))
         node.add_children(Node("SEMICOLON", self.match_token("SEMICOLON", ";")))
         return node
+    
+    def parse_block(self):
+        """<block> ::= <declaration-part> <compound-statement>
 
-
-    def parse_declaration_part(self):
+        Dipakai oleh deklarasi procedure / function.
         """
-        <declaration-part> ::= { 'var' <var-declaration> ';' }
-        (stub sederhana untuk menerima IDENTIFIER(var) + deklarasi dasar)
+        node = Node("<block>")
+        decl = self.parse_declaration_part()
+        if decl:
+            node.add_children(decl)
+        comp = self.parse_compound_statement()
+        if comp:
+            node.add_children(comp)
+        return node
+    
+    def parse_declaration_part(self):
+        """<declaration-part> ::=
+            { <const-declaration> }
+            { <type-declaration> }
+            { <var-declaration> }
+            { <subprogram-declaration> }
         """
         node = Node("<declaration-part>")
 
-        tok = self.peek()
-        # cuma deteksi "var" tanpa strict KEYWORD
-        if tok and tok.value.lower() == "var":
-            node.add_children(Node("IDENTIFIER", self.consume_token()))  # var
-            # stub deklarasi satu variabel: x : integer;
-            if self.peek() and self.peek().token_type == "IDENTIFIER":
-                node.add_children(Node("IDENTIFIER", self.match_token("IDENTIFIER")))
-            if self.peek() and self.peek().token_type == "COLON":
-                node.add_children(Node("COLON", self.match_token("COLON", ":")))
-            if self.peek() and self.peek().token_type in ("KEYWORD", "IDENTIFIER"):
-                node.add_children(Node("TYPE", self.consume_token()))
-            if self.peek() and self.peek().token_type == "SEMICOLON":
-                node.add_children(Node("SEMICOLON", self.match_token("SEMICOLON", ";")))
+        while True:
+            tok = self.peek()
+            if not tok or tok.token_type != "KEYWORD":
+                break
+
+            kw = tok.value.lower()
+
+            if kw == "konstanta":
+                const_node = self.parse_const_declaration()
+                if const_node:
+                    node.add_children(const_node)
+                continue
+
+            if kw == "tipe":
+                type_decl = self.parse_type_declaration()
+                if type_decl:
+                    node.add_children(type_decl)
+                continue
+
+            if kw == "variabel":
+                var_decl = self.parse_var_declaration()
+                if var_decl:
+                    node.add_children(var_decl)
+                continue
+
+            if kw in ("prosedur", "fungsi"):
+                subprog = self.parse_subprogram_declaration()
+                if subprog:
+                    node.add_children(subprog)
+                continue
+
+            break
+
+        return node if node.children else None
+    
+    # ====== CONST DECLARATION ======
+    def parse_const_declaration(self):
+        """<const-declaration> ::= 'konstanta' ( IDENTIFIER '=' <expression> ';' )+"""
+        node = Node("<const-declaration>")
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "konstanta")))
+
+        # Minimal satu definisi konstanta
+        while True:
+            ident = self.match_token("IDENTIFIER")
+            if not ident:
+                break
+            node.add_children(Node("IDENTIFIER", ident))
+
+            eq = self.match_token("RELATIONAL_OPERATOR", "=")
+            if not eq:
+                break
+            node.add_children(Node("RELATIONAL_OPERATOR", eq))
+
+            value_expr = self.parse_expression()
+            if value_expr:
+                node.add_children(value_expr)
+            else:
+                # fallback sederhana: kalau parse_expression belum diisi,
+                # setidaknya konsumsi literal / identifier.
+                lit = self.peek()
+                if lit and lit.token_type in ("NUMBER", "CHAR_LITERAL", "STRING_LITERAL", "IDENTIFIER"):
+                    node.add_children(Node(lit.token_type, self.consume_token()))
+                else:
+                    break
+
+            semi = self.match_token("SEMICOLON", ";")
+            if not semi:
+                break
+            node.add_children(Node("SEMICOLON", semi))
+
+            # cek apakah masih ada IDENTIFIER lagi (definisi konstanta berikutnya)
+            nxt = self.peek()
+            if not (nxt and nxt.token_type == "IDENTIFIER"):
+                break
 
         return node
 
+    # ====== TYPE DECLARATION ======
+    def parse_type_declaration(self):
+        """<type-declaration> ::= 'tipe' ( IDENTIFIER '=' <type> ';' )+"""
+        node = Node("<type-declaration>")
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "tipe")))
 
-    def parse_compound_statement(self):
+        while True:
+            ident = self.match_token("IDENTIFIER")
+            if not ident:
+                break
+            node.add_children(Node("IDENTIFIER", ident))
+
+            eq = self.match_token("RELATIONAL_OPERATOR", "=")
+            if not eq:
+                break
+            node.add_children(Node("RELATIONAL_OPERATOR", eq))
+
+            type_node = self.parse_type()
+            if type_node:
+                node.add_children(type_node)
+
+            semi = self.match_token("SEMICOLON", ";")
+            if not semi:
+                break
+            node.add_children(Node("SEMICOLON", semi))
+
+            nxt = self.peek()
+            if not (nxt and nxt.token_type == "IDENTIFIER"):
+                break
+
+        return node
+
+    def parse_type(self):
+        """<type> ::= 'integer' | 'real' | 'boolean' | 'char' | <array-type>"""
+        node = Node("<type>")
+        tok = self.peek()
+
+        if tok and tok.token_type == "KEYWORD":
+            kw = tok.value.lower()
+            if kw in ("integer", "real", "boolean", "char"):
+                node.add_children(Node("KEYWORD", self.consume_token()))
+                return node
+            if kw == "larik":
+                array_node = self.parse_array_type()
+                if array_node:
+                    node.add_children(array_node)
+                return node
+
+        # kalau tidak cocok grammar, catat error tapi tetap coba lanjut
+        if tok:
+            self.error("type", f"{tok.token_type}({tok.value})")
+            node.add_children(Node(tok.token_type, self.consume_token()))
+            return node
+
+        self.error("type", "EOF")
+        return node
+
+    def parse_array_type(self):
+        """<array-type> ::= 'larik' '[' <range> ']' 'dari' <type>"""
+        node = Node("<array-type>")
+
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "larik")))
+        node.add_children(Node("LBRACKET", self.match_token("LBRACKET", "[")))
+
+        range_node = self.parse_range()
+        if range_node:
+            node.add_children(range_node)
+
+        node.add_children(Node("RBRACKET", self.match_token("RBRACKET", "]")))
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "dari")))
+
+        elem_type = self.parse_type()
+        if elem_type:
+            node.add_children(elem_type)
+
+        return node
+
+    def parse_range(self):
+        """<range> ::= <expression> RANGE_OPERATOR <expression>"""
+        node = Node("<range>")
+
+        left = self.parse_expression()
+        if left:
+            node.add_children(left)
+
+        node.add_children(Node("RANGE_OPERATOR", self.match_token("RANGE_OPERATOR", "..")))
+
+        right = self.parse_expression()
+        if right:
+            node.add_children(right)
+
+        return node
+    
+    # ====== VAR DECLARATION ======
+    def parse_var_declaration(self):
+        """<var-declaration> ::= 'variabel' ( <identifier-list> ':' <type> ';' )+"""
+        node = Node("<var-declaration>")
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "variabel")))
+
+        while True:
+            ident_list = self.parse_identifier_list()
+            if not ident_list:
+                break
+            node.add_children(ident_list)
+
+            node.add_children(Node("COLON", self.match_token("COLON", ":")))
+
+            type_node = self.parse_type()
+            if type_node:
+                node.add_children(type_node)
+
+            semi = self.match_token("SEMICOLON", ";")
+            if not semi:
+                break
+            node.add_children(Node("SEMICOLON", semi))
+
+            nxt = self.peek()
+            # kalau setelah ';' masih IDENTIFIER, berarti masih dalam blok var yang sama
+            if not (nxt and nxt.token_type == "IDENTIFIER"):
+                break
+
+        return node
+    
+    def parse_identifier_list(self):
+        """<identifier-list> ::= IDENTIFIER (',' IDENTIFIER)*"""
+        node = Node("<identifier-list>")
+
+        first = self.match_token("IDENTIFIER")
+        if not first:
+            return None
+        node.add_children(Node("IDENTIFIER", first))
+
+        while self.peek() and self.peek().token_type == "COMMA":
+            comma_tok = self.consume_token()
+            node.add_children(Node("COMMA", comma_tok))
+
+            ident = self.match_token("IDENTIFIER")
+            if not ident:
+                break
+            node.add_children(Node("IDENTIFIER", ident))
+
+        return node
+    
+    # ====== SUBPROGRAM DECLARATION ======
+    def parse_subprogram_declaration(self):
+        """<subprogram-declaration> ::= <procedure-declaration> | <function-declaration>"""
+        tok = self.peek()
+        if not tok or tok.token_type != "KEYWORD":
+            return None
+
+        if tok.value.lower() == "prosedur":
+            return self.parse_procedure_declaration()
+        if tok.value.lower() == "fungsi":
+            return self.parse_function_declaration()
+        return None
+
+    def parse_procedure_declaration(self):
+        """<procedure-declaration> ::
+            'prosedur' IDENTIFIER [ <formal-parameter-list> ] ';' <block> ';'
         """
-        <compound-statement> ::= 'begin' <statement-list> 'end'
-        (stub versi sederhana, bisa baca satu assignment statement)
+        node = Node("<procedure-declaration>")
+
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "prosedur")))
+        node.add_children(Node("IDENTIFIER", self.match_token("IDENTIFIER")))
+
+        # [ formal-parameter-list ]
+        if self.peek() and self.peek().token_type == "LPARENTHESIS":
+            fp = self.parse_formal_parameter_list()
+            if fp:
+                node.add_children(fp)
+
+        node.add_children(Node("SEMICOLON", self.match_token("SEMICOLON", ";")))
+
+        block = self.parse_block()
+        if block:
+            node.add_children(block)
+
+        node.add_children(Node("SEMICOLON", self.match_token("SEMICOLON", ";")))
+
+        return node
+
+    def parse_function_declaration(self):
+        """<function-declaration> ::
+            'fungsi' IDENTIFIER [ <formal-parameter-list> ] ':' <type> ';' <block> ';'
+        """
+        node = Node("<function-declaration>")
+
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "fungsi")))
+        node.add_children(Node("IDENTIFIER", self.match_token("IDENTIFIER")))
+
+        if self.peek() and self.peek().token_type == "LPARENTHESIS":
+            fp = self.parse_formal_parameter_list()
+            if fp:
+                node.add_children(fp)
+
+        node.add_children(Node("COLON", self.match_token("COLON", ":")))
+
+        ret_type = self.parse_type()
+        if ret_type:
+            node.add_children(ret_type)
+
+        node.add_children(Node("SEMICOLON", self.match_token("SEMICOLON", ";")))
+
+        block = self.parse_block()
+        if block:
+            node.add_children(block)
+
+        node.add_children(Node("SEMICOLON", self.match_token("SEMICOLON", ";")))
+
+        return node
+
+    def parse_formal_parameter_list(self):
+        """<formal-parameter-list> ::=
+            '(' <parameter-group> ( ';' <parameter-group> )* ')'
+        """
+        node = Node("<formal-parameter-list>")
+
+        node.add_children(Node("LPARENTHESIS", self.match_token("LPARENTHESIS", "(")))
+
+        param_group = self.parse_parameter_group()
+        if param_group:
+            node.add_children(param_group)
+
+        while self.peek() and self.peek().token_type == "SEMICOLON":
+            semi = self.consume_token()
+            node.add_children(Node("SEMICOLON", semi))
+
+            param_group = self.parse_parameter_group()
+            if not param_group:
+                break
+            node.add_children(param_group)
+
+        node.add_children(Node("RPARENTHESIS", self.match_token("RPARENTHESIS", ")")))
+        return node
+
+    def parse_parameter_group(self):
+        """<parameter-group> ::= <identifier-list> ':' <type>"""
+        node = Node("<parameter-group>")
+
+        ident_list = self.parse_identifier_list()
+        if not ident_list:
+            return None
+        node.add_children(ident_list)
+
+        node.add_children(Node("COLON", self.match_token("COLON", ":")))
+
+        type_node = self.parse_type()
+        if type_node:
+            node.add_children(type_node)
+
+        return node
+    
+    # ====== COMPOUND STMT (sementara masih stub sederhana) ======
+    def parse_compound_statement(self):
+        """<compound-statement> ::= 'mulai' <statement-list> 'selesai'
+
+        masih stub sederhana, hanya menjaga keyword Bahasa Indonesia.
         """
         node = Node("<compound-statement>")
-        
-        # begin
-        if self.peek() and self.peek().value.lower() == "begin":
-            node.add_children(Node("IDENTIFIER", self.consume_token()))
-        
-        # satu statement: x := 10;
-        if self.peek() and self.peek().token_type == "IDENTIFIER":
-            assign_node = Node("<statement>")
-            assign_node.add_children(Node("IDENTIFIER", self.match_token("IDENTIFIER")))
-            if self.peek() and self.peek().token_type == "ASSIGN_OPERATOR":
-                assign_node.add_children(Node("ASSIGN_OPERATOR", self.match_token("ASSIGN_OPERATOR", ":=")))
-            if self.peek() and self.peek().token_type == "NUMBER":
-                assign_node.add_children(Node("NUMBER", self.match_token("NUMBER")))
-            if self.peek() and self.peek().token_type == "SEMICOLON":
-                assign_node.add_children(Node("SEMICOLON", self.match_token("SEMICOLON", ";")))
-            node.add_children(assign_node)
 
-        # end
-        if self.peek() and self.peek().value.lower() == "end":
-            node.add_children(Node("IDENTIFIER", self.consume_token()))
+        # KEYWORD(mulai)
+        if self.peek() and self.peek().token_type == "KEYWORD" and self.peek().value.lower() == "mulai":
+            node.add_children(Node("KEYWORD", self.consume_token()))
+        else:
+            tok = self.peek()
+            self.error("KEYWORD(mulai)", f"{tok.token_type}({tok.value})" if tok else "EOF")
+
+        # TODO: mengisi parse_statement_list()
+        stmt_list = Node("<statement-list>")
+        node.add_children(stmt_list)
+
+        # KEYWORD(selesai)
+        if self.peek() and self.peek().token_type == "KEYWORD" and self.peek().value.lower() == "selesai":
+            node.add_children(Node("KEYWORD", self.consume_token()))
+        else:
+            tok = self.peek()
+            self.error("KEYWORD(selesai)", f"{tok.token_type}({tok.value})" if tok else "EOF")
 
         return node
     
