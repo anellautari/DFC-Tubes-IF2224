@@ -436,31 +436,98 @@ class Parser:
 
         return node
     
-    # ====== COMPOUND STMT (sementara masih stub sederhana) ======
-    def parse_compound_statement(self):
-        """<compound-statement> ::= 'mulai' <statement-list> 'selesai'
+    # ====== COMPOUND STATEMENT ======
+    def parse_statement(self):
+        nextToken = self.peek()
+        if not nextToken:
+            self.error("EOF")
+        if nextToken.value == "jika":
+            return self.parse_if_statement()
+        elif nextToken.value == "selama":
+            return self.parse_while_statement()
+        elif nextToken.value == "untuk":
+            return self.parse_for_statement()
+        elif nextToken.token_type == "IDENTIFIER":
+            return self.parse_assignment_statement()
+        elif nextToken.value == "mulai":
+            return self.parse_compound_statement()
+        else:
+            self.error("Unexpected token in statement")
+        
+    def parse_if_statement(self):
+        # <if-statement> ::= 'if' <expression> 'then' <statement> [ 'else' <statement> ]
 
-        masih stub sederhana, hanya menjaga keyword Bahasa Indonesia.
+        node = Node("<if-statement>")
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "if")))
+
+        node.add_children(self.parse_expression())
+
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "then")))
+        node.add_children(self.parse_statement())
+
+        token = self.peek()
+        if token and token.value == "else":
+            node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "else")))
+            node.add_children(self.parse_statement())
+
+        return node
+
+    def parse_while_statement(self):
+        # <while-statement> ::= 'while' <expression> 'do' <statement>
+
+        node = Node("<while-statement>")
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "while")))
+        
+        node.add_children(self.parse_expression())
+
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "do")))
+        node.add_children(self.parse_statement())
+
+        return node
+    
+    def parse_for_statement(self):
+        # <for-statement> ::= 'for' <identifier> ':=' <expression> 'to' <expression> 'do' <statement>
+        
+        node = Node("<for-statement>")
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "for")))
+        node.add_children(Node("IDENTIFIER", self.match_token("IDENTIFIER")))
+        node.add_children(Node("ASSIGN_OPERATOR", self.match_token("ASSIGN_OPERATOR", ":=")))
+        node.add_children(self.parse_expression())
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "to")))
+        node.add_children(self.parse_expression())
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "do")))
+        node.add_children(self.parse_statement())
+
+        return node
+    
+    def parse_assignment_statement(self):
+        # <assignment-statement> ::= <identifier> ':=' <expression>
+        
+        node = Node("<assignment-statement>")
+        node.add_children(Node("IDENTIFIER", self.match_token("IDENTIFIER")))
+        node.add_children(Node("ASSIGN_OPERATOR", self.match_token("ASSIGN_OPERATOR", ":=")))
+        node.add_children(self.parse_expression())
+
+        return node
+
+    def parse_compound_statement(self):
+        """
+        <compound-statement> ::= 'begin' <statement-list> 'end'
         """
         node = Node("<compound-statement>")
-
-        # KEYWORD(mulai)
-        if self.peek() and self.peek().token_type == "KEYWORD" and self.peek().value.lower() == "mulai":
-            node.add_children(Node("KEYWORD", self.consume_token()))
+        
+        # begin
+        if self.peek() and self.peek().value.lower() == "mulai":
+            node.add_children(Node("IDENTIFIER", self.consume_token()))
+            while self.peek() and self.peek().value.lower() != "selesai" :
+                statement_node = self.parse_statement()
+                if statement_node:
+                    node.add_children(statement_node)
+            node.add_children(Node("IDENTIFIER", self.consume_token()))
+            
         else:
-            tok = self.peek()
-            self.error("KEYWORD(mulai)", f"{tok.token_type}({tok.value})" if tok else "EOF")
+            self.error("IDENTIFIER(mulai)", "EOF" if self.peek() is None else f"{self.peek().token_type}({self.peek().value})")
 
-        # TODO: mengisi parse_statement_list()
-        stmt_list = Node("<statement-list>")
-        node.add_children(stmt_list)
-
-        # KEYWORD(selesai)
-        if self.peek() and self.peek().token_type == "KEYWORD" and self.peek().value.lower() == "selesai":
-            node.add_children(Node("KEYWORD", self.consume_token()))
-        else:
-            tok = self.peek()
-            self.error("KEYWORD(selesai)", f"{tok.token_type}({tok.value})" if tok else "EOF")
 
         return node
     
