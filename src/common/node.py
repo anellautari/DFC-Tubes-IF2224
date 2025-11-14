@@ -1,8 +1,10 @@
+from pascal_token import Token
+
 class Node:
     def __init__(self, label, token=None):
-        self.label = label
-        self.token = token
-        self.children = []
+        self.label: str = label
+        self.token: Token | None = token
+        self.children: list[Node] = []
 
     def add_children(self, node):
         if node:
