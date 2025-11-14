@@ -633,3 +633,143 @@ class Parser:
     
     def parse_simple_expression(self):
         pass
+
+    def parse_term(self):
+        """
+        <term> ::= <factor> ( <multiplicative-operator> <factor> )*
+        """
+        node = Node("<term>")
+
+        # first factor
+        first_factor = self.parse_factor()
+        if not first_factor:
+            _tok = self.peek()
+            self.error("factor", _tok.token_type if _tok else "EOF")
+            return None
+        node.add_children(first_factor)
+
+        # (* op factor)
+        while True:
+            op_node = self.parse_multiplicative_operator()
+            if not op_node:
+                break
+            node.add_children(op_node)
+
+            rhs = self.parse_factor()
+            if not rhs:
+                _tok2 = self.peek()
+                self.error("factor", _tok2.token_type if _tok2 else "EOF")
+                return None
+            node.add_children(rhs)
+
+        return node
+
+    def parse_factor(self):
+        """
+        <factor> ::= IDENTIFIER
+                   | NUMBER
+                   | CHAR_LITERAL
+                   | STRING_LITERAL
+                   | LPARENTHESIS <expression> RPARENTHESIS
+                   | LOGICAL_OPERATOR(tidak) <factor>
+        Catatan: Pemanggilan fungsi/prosedur (IDENTIFIER (...)) akan ditangani di rule lain
+        atau dapat diperluas kemudian; di sini fokus pada bentuk-bentuk dasar sesuai permintaan.
+        """
+        node = Node("<factor>")
+        tok = self.peek()
+
+        if tok is None:
+            self.error("factor", "EOF")
+            return None
+
+        # unary logical NOT: 'tidak'
+        if tok.token_type == "LOGICAL_OPERATOR" and tok.value.lower() == "tidak":
+            not_tok = self.consume_token()
+            node.add_children(Node("LOGICAL_OPERATOR", not_tok))
+            sub = self.parse_factor()
+            if not sub:
+                _tok3 = self.peek()
+                self.error("factor", _tok3.token_type if _tok3 else "EOF")
+                return None
+            node.add_children(sub)
+            return node
+
+        # parenthesized expression
+        if tok.token_type == "LPARENTHESIS" and tok.value == "(":
+            lpar = self.consume_token()
+            node.add_children(Node("LPARENTHESIS", lpar))
+
+            expr = self.parse_expression()
+            if not expr:
+                _tok4 = self.peek()
+                self.error("expression", _tok4.token_type if _tok4 else "EOF")
+                return None
+            node.add_children(expr)
+
+            rpar = self.match_token("RPARENTHESIS", ")")
+            if not rpar:
+                return None
+            node.add_children(Node("RPARENTHESIS", rpar))
+            return node
+
+        # literals and identifier
+        if tok.token_type in ("NUMBER", "CHAR_LITERAL", "STRING_LITERAL"):
+            node.add_children(Node(tok.token_type, self.consume_token()))
+            return node
+
+        if tok.token_type == "IDENTIFIER":
+            node.add_children(Node("IDENTIFIER", self.consume_token()))
+            return node
+
+        # if no form matched
+        self.error("factor", f"{tok.token_type}({tok.value})")
+        return None
+
+    def parse_relational_operator(self):
+        """
+        <relational-operator> ::= '=' | '<>' | '<' | '<=' | '>' | '>='
+        """
+        tok = self.peek()
+        if tok and tok.token_type == "RELATIONAL_OPERATOR" and tok.value in ("=", "<>", "<", "<=", ">", ">="):
+            node = Node("<relational-operator>")
+            node.add_children(Node("RELATIONAL_OPERATOR", self.consume_token()))
+            return node
+        return None
+
+    def parse_additive_operator(self):
+        """
+        <additive-operator> ::= '+' | '-' | 'atau'
+        '+' | '-' bertipe ARITHMETIC_OPERATOR, 'atau' bertipe LOGICAL_OPERATOR
+        """
+        tok = self.peek()
+        if tok is None:
+            return None
+
+        if tok.token_type == "ARITHMETIC_OPERATOR" and tok.value in ("+", "-"):
+            node = Node("<additive-operator>")
+            node.add_children(Node("ARITHMETIC_OPERATOR", self.consume_token()))
+            return node
+        if tok.token_type == "LOGICAL_OPERATOR" and tok.value.lower() == "atau":
+            node = Node("<additive-operator>")
+            node.add_children(Node("LOGICAL_OPERATOR", self.consume_token()))
+            return node
+        return None
+
+    def parse_multiplicative_operator(self):
+        """
+        <multiplicative-operator> ::= '*' | '/' | 'bagi' | 'mod' | 'dan'
+        '*' '/' 'bagi' 'mod' bertipe ARITHMETIC_OPERATOR, 'dan' bertipe LOGICAL_OPERATOR
+        """
+        tok = self.peek()
+        if tok is None:
+            return None
+
+        if tok.token_type == "ARITHMETIC_OPERATOR" and tok.value in ("*", "/", "bagi", "mod"):
+            node = Node("<multiplicative-operator>")
+            node.add_children(Node("ARITHMETIC_OPERATOR", self.consume_token()))
+            return node
+        if tok.token_type == "LOGICAL_OPERATOR" and tok.value.lower() == "dan":
+            node = Node("<multiplicative-operator>")
+            node.add_children(Node("LOGICAL_OPERATOR", self.consume_token()))
+            return node
+        return None
