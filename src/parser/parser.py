@@ -472,7 +472,12 @@ class Parser:
             elif kw == "mulai":
                 return self.parse_compound_statement()
         if tok.token_type == "IDENTIFIER":
-            return self.parse_assignment_statement()
+            # liat token kedua untuk memutuskan ini function call atau IDENTIFIER biasa
+            next_tok_index = self.current_index + 1 
+            if next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "ASSIGN_OPERATOR":
+                return self.parse_assignment_statement()
+            else:
+                return self.parse_procedure_call()
         self.error("statement", tok)
         return None
         
@@ -753,6 +758,7 @@ class Parser:
     def parse_factor(self):
         """
         <factor> ::= IDENTIFIER
+                   | <function-call>
                    | NUMBER
                    | CHAR_LITERAL
                    | STRING_LITERAL
@@ -804,8 +810,13 @@ class Parser:
             return node
 
         if tok.token_type == "IDENTIFIER":
-            node.add_children(Node("IDENTIFIER", self.consume_token()))
-            return node
+            # liat token kedua untuk memutuskan ini function call atau IDENTIFIER biasa
+            next_tok_index = self.current_index + 1
+            if next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "LPARENTHESIS":
+                return self.parse_function_call()
+            else:
+                node.add_children(Node("IDENTIFIER", self.consume_token()))
+                return node
 
         # if no form matched
         self.error("factor", tok)
