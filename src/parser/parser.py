@@ -662,10 +662,63 @@ class Parser:
         return node
 
     def parse_expression(self):
-        pass
+        # <expression> ::= <simple-expression> [ <relational-operator> <simple-expression> ]
+        node = Node("<expression>")
+        
+        left_simple_expr = self.parse_simple_expression()
+        if not left_simple_expr:
+            self.error("simple-expression", self.peek())
+            return None
+        node.add_children(left_simple_expr)
+        
+        # [ <relational-operator> <simple-expression> ]
+        op_node = self.parse_relational_operator()
+        
+        if op_node:
+            # kalo ada operator relasional, parse <simple-expression> kedua
+            node.add_children(op_node)
+            
+            right_simple_expr = self.parse_simple_expression()
+            if not right_simple_expr:
+                self.error("simple-expression", self.peek())
+                return None
+            node.add_children(right_simple_expr)
+            
+        return node
     
     def parse_simple_expression(self):
-        pass
+        # <simple-expression> ::= [ <sign> ] <term> { <additive-operator> <term> }
+        node = Node("<simple-expression>")
+        
+        # opsional [ <sign> ] (+ atau -)
+        tok = self.peek()
+        if tok and tok.token_type == "ARITHMETIC_OPERATOR" and tok.value in ('+', '-'):
+            sign_node = Node("SIGN", self.consume_token())
+            node.add_children(sign_node)
+            
+        term_node = self.parse_term()
+        if not term_node:
+            self.error("term", self.peek())
+            return None
+        node.add_children(term_node)
+        
+        # loop untuk { <additive-operator> <term> }
+        while True:
+            op_node = self.parse_additive_operator()
+            
+            if not op_node:
+                break 
+                
+            node.add_children(op_node)
+            
+            # kalo ada operator, wajib ada <term> berikutnya
+            term_node = self.parse_term()
+            if not term_node:
+                self.error("term", self.peek())
+                return None 
+            node.add_children(term_node)
+            
+        return node
 
     def parse_term(self):
         """
