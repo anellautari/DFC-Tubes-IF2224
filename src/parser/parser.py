@@ -1,11 +1,14 @@
-from common.pascal_token import Token
-from common.node import Node
+import logging
+from src.common.pascal_token import Token
+from src.common.node import Node
+from src.common.errors import TokenUnexpectedError
 
 class Parser:
-    def __init__(self, tokens: list[Token]):
+    def __init__(self, tokens: list[Token], raise_on_error: bool = False):
         self.tokens = tokens
         self.current_index = 0
         self.errors = []
+        self.raise_on_error = raise_on_error
 
     def peek(self) -> Token | None:
         # lihat token saat ini tanpa mengonsumsi
@@ -25,7 +28,7 @@ class Parser:
         # kalau ngga, muncul error syntax
         token = self.peek()
         if token is None:
-            self.error(f"{expected_type}({expected_value})" if expected_value else expected_type, "EOF")
+            self.error(f"{expected_type}({expected_value})" if expected_value else expected_type, None)
             return None
         
         if token.token_type == expected_type and (expected_value is None or token.value.lower() == expected_value.lower()):
@@ -33,15 +36,23 @@ class Parser:
         else:
             self.error(
                 f"{expected_type}({expected_value})" if expected_value else expected_type,
-                f"{token.token_type}({token.value})"
+                token
             )
             return None
         
-    def error(self, expected: str, actual: str):
-        # nampilin pesan error sintaks
-        msg = f"Syntax error: expected {expected}, but got {actual}"
-        print(msg)
-        self.errors.append(msg)       
+    def error(self, expected: str, actual_token: Token | None):
+        actual_desc = self._fmt_token(actual_token)
+        line, col = (actual_token.line, actual_token.column) if actual_token else (None, None)
+        msg = f"Syntax error: expected {expected}, but got {actual_desc}"
+        logging.error(msg)
+        self.errors.append(msg)
+        if self.raise_on_error:
+            raise TokenUnexpectedError(expected, actual_desc, line, col)
+
+    def _fmt_token(self, tok: Token | None) -> str:
+        if tok is None:
+            return "EOF"
+        return f"{tok.token_type}({tok.value}) @ {tok.line}:{tok.column}"
         
     def parse_program(self):
         # Aturan grammar:
@@ -234,11 +245,11 @@ class Parser:
 
         # kalau tidak cocok grammar, catat error tapi tetap coba lanjut
         if tok:
-            self.error("type", f"{tok.token_type}({tok.value})")
+            self.error("type", tok)
             node.add_children(Node(tok.token_type, self.consume_token()))
             return node
 
-        self.error("type", "EOF")
+        self.error("type", None)
         return node
 
     def parse_array_type(self):
@@ -316,7 +327,10 @@ class Parser:
             return None
         node.add_children(Node("IDENTIFIER", first))
 
-        while self.peek() and self.peek().token_type == "COMMA":
+        while True:
+            tok = self.peek()
+            if not tok or tok.token_type != "COMMA":
+                break
             comma_tok = self.consume_token()
             node.add_children(Node("COMMA", comma_tok))
 
@@ -350,7 +364,8 @@ class Parser:
         node.add_children(Node("IDENTIFIER", self.match_token("IDENTIFIER")))
 
         # [ formal-parameter-list ]
-        if self.peek() and self.peek().token_type == "LPARENTHESIS":
+        tok = self.peek()
+        if tok and tok.token_type == "LPARENTHESIS":
             fp = self.parse_formal_parameter_list()
             if fp:
                 node.add_children(fp)
@@ -374,7 +389,8 @@ class Parser:
         node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "fungsi")))
         node.add_children(Node("IDENTIFIER", self.match_token("IDENTIFIER")))
 
-        if self.peek() and self.peek().token_type == "LPARENTHESIS":
+        tok = self.peek()
+        if tok and tok.token_type == "LPARENTHESIS":
             fp = self.parse_formal_parameter_list()
             if fp:
                 node.add_children(fp)
@@ -407,7 +423,10 @@ class Parser:
         if param_group:
             node.add_children(param_group)
 
-        while self.peek() and self.peek().token_type == "SEMICOLON":
+        while True:
+            tok = self.peek()
+            if not tok or tok.token_type != "SEMICOLON":
+                break
             semi = self.consume_token()
             node.add_children(Node("SEMICOLON", semi))
 
@@ -438,36 +457,39 @@ class Parser:
     
     # ====== COMPOUND STATEMENT ======
     def parse_statement(self):
-        nextToken = self.peek()
-        if not nextToken:
-            self.error("EOF")
-        if nextToken.value == "jika":
-            return self.parse_if_statement()
-        elif nextToken.value == "selama":
-            return self.parse_while_statement()
-        elif nextToken.value == "untuk":
-            return self.parse_for_statement()
-        elif nextToken.token_type == "IDENTIFIER":
+        tok = self.peek()
+        if not tok:
+            self.error("statement", None)
+            return None
+        if tok.token_type == "KEYWORD":
+            kw = tok.value.lower()
+            if kw == "jika":
+                return self.parse_if_statement()
+            elif kw == "selama":
+                return self.parse_while_statement()
+            elif kw == "untuk":
+                return self.parse_for_statement()
+            elif kw == "mulai":
+                return self.parse_compound_statement()
+        if tok.token_type == "IDENTIFIER":
             return self.parse_assignment_statement()
-        elif nextToken.value == "mulai":
-            return self.parse_compound_statement()
-        else:
-            self.error("Unexpected token in statement")
+        self.error("statement", tok)
+        return None
         
     def parse_if_statement(self):
         # <if-statement> ::= 'if' <expression> 'then' <statement> [ 'else' <statement> ]
 
         node = Node("<if-statement>")
-        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "if")))
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "jika")))
 
         node.add_children(self.parse_expression())
 
-        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "then")))
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "maka")))
         node.add_children(self.parse_statement())
 
         token = self.peek()
-        if token and token.value == "else":
-            node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "else")))
+        if token and token.token_type == "KEYWORD" and token.value.lower() in ("selain_itu"):
+            node.add_children(Node("KEYWORD", self.consume_token()))
             node.add_children(self.parse_statement())
 
         return node
@@ -476,39 +498,35 @@ class Parser:
         # <while-statement> ::= 'while' <expression> 'do' <statement>
 
         node = Node("<while-statement>")
-        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "while")))
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "selama")))
         
         node.add_children(self.parse_expression())
 
-        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "do")))
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "lakukan")))
         node.add_children(self.parse_statement())
 
         return node
     
     def parse_for_statement(self):
-        # <for-statement> ::= 'for' <identifier> ':=' <expression> 'to' <expression> 'do' <statement>
+        # <for-statement> ::= 'untuk' IDENTIFIER ':=' <expression> ('ke'|'turun_ke') <expression> 'lakukan' <statement>
         
         node = Node("<for-statement>")
-        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "for")))
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "untuk")))
         node.add_children(Node("IDENTIFIER", self.match_token("IDENTIFIER")))
         node.add_children(Node("ASSIGN_OPERATOR", self.match_token("ASSIGN_OPERATOR", ":=")))
         node.add_children(self.parse_expression())
-        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "to")))
+        dir_tok = self.peek()
+        if dir_tok and dir_tok.token_type == "KEYWORD" and dir_tok.value.lower() in ("ke", "turun_ke", "turun-ke"):
+            node.add_children(Node("KEYWORD", self.consume_token()))
+        else:
+            self.error("KEYWORD(ke|turun_ke)", dir_tok)
         node.add_children(self.parse_expression())
-        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "do")))
+        node.add_children(Node("KEYWORD", self.match_token("KEYWORD", "lakukan")))
         node.add_children(self.parse_statement())
 
         return node
     
-    def parse_assignment_statement(self):
-        # <assignment-statement> ::= <identifier> ':=' <expression>
-        
-        node = Node("<assignment-statement>")
-        node.add_children(Node("IDENTIFIER", self.match_token("IDENTIFIER")))
-        node.add_children(Node("ASSIGN_OPERATOR", self.match_token("ASSIGN_OPERATOR", ":=")))
-        node.add_children(self.parse_expression())
-
-        return node
+    # remove duplicate earlier variant of parse_assignment_statement (kept the robust version below)
 
     def parse_compound_statement(self):
         """
@@ -517,16 +535,26 @@ class Parser:
         node = Node("<compound-statement>")
         
         # begin
-        if self.peek() and self.peek().value.lower() == "mulai":
-            node.add_children(Node("IDENTIFIER", self.consume_token()))
-            while self.peek() and self.peek().value.lower() != "selesai" :
+        tok_begin = self.peek()
+        if tok_begin and tok_begin.token_type == "KEYWORD" and tok_begin.value.lower() == "mulai":
+            node.add_children(Node("KEYWORD", self.consume_token()))
+            while True:
+                tok_inner = self.peek()
+                if not tok_inner or (tok_inner.token_type == "KEYWORD" and tok_inner.value.lower() == "selesai"):
+                    break
                 statement_node = self.parse_statement()
                 if statement_node:
                     node.add_children(statement_node)
-            node.add_children(Node("IDENTIFIER", self.consume_token()))
-            
+                elif self.peek() == tok_inner:
+                    self.consume_token()
+
+            end_tok = self.peek()
+            if end_tok and end_tok.token_type == "KEYWORD" and end_tok.value.lower() == "selesai":
+                node.add_children(Node("KEYWORD", self.consume_token()))
+            else:
+                self.error("KEYWORD(selesai)", end_tok)
         else:
-            self.error("IDENTIFIER(mulai)", "EOF" if self.peek() is None else f"{self.peek().token_type}({self.peek().value})")
+            self.error("KEYWORD(mulai)", self.peek())
 
 
         return node
@@ -547,7 +575,7 @@ class Parser:
         
         expr_node = self.parse_expression()
         if not expr_node:
-            self.error("expression", self.peek().token_type if self.peek() else "EOF")
+            self.error("expression", self.peek())
             return None
         node.add_children(expr_node)
         
@@ -563,7 +591,8 @@ class Parser:
         node.add_children(Node("IDENTIFIER", ident))
         
         # [ ... ] 
-        if self.peek() and self.peek().token_type == "LPARENTHESIS":
+        tok = self.peek()
+        if tok and tok.token_type == "LPARENTHESIS":
             lparen = self.consume_token() 
             node.add_children(Node("LPARENTHESIS", lparen))
             
@@ -591,7 +620,8 @@ class Parser:
         if not lparen: return None
         node.add_children(Node("LPARENTHESIS", lparen))
         
-        if self.peek() and self.peek().token_type != "RPARENTHESIS":
+        tok = self.peek()
+        if tok and tok.token_type != "RPARENTHESIS":
             param_list_node = self.parse_parameter_list()
             if param_list_node:
                 node.add_children(param_list_node)
@@ -616,13 +646,16 @@ class Parser:
         node.add_children(expr_node)
         
         # { COMMA <expression> }
-        while self.peek() and self.peek().token_type == "COMMA":
+        while True:
+            tok = self.peek()
+            if not tok or tok.token_type != "COMMA":
+                break
             comma_node = Node("COMMA", self.consume_token())
             node.add_children(comma_node)
             
             expr_node = self.parse_expression()
             if not expr_node:
-                self.error("expression", self.peek().token_type if self.peek() else "EOF")
+                self.error("expression", self.peek())
                 return None # Error, koma harus diikuti ekspresi
             node.add_children(expr_node)
             
@@ -644,7 +677,7 @@ class Parser:
         first_factor = self.parse_factor()
         if not first_factor:
             _tok = self.peek()
-            self.error("factor", _tok.token_type if _tok else "EOF")
+            self.error("factor", _tok)
             return None
         node.add_children(first_factor)
 
@@ -658,7 +691,7 @@ class Parser:
             rhs = self.parse_factor()
             if not rhs:
                 _tok2 = self.peek()
-                self.error("factor", _tok2.token_type if _tok2 else "EOF")
+                self.error("factor", _tok2)
                 return None
             node.add_children(rhs)
 
@@ -679,7 +712,7 @@ class Parser:
         tok = self.peek()
 
         if tok is None:
-            self.error("factor", "EOF")
+            self.error("factor", None)
             return None
 
         # unary logical NOT: 'tidak'
@@ -689,7 +722,7 @@ class Parser:
             sub = self.parse_factor()
             if not sub:
                 _tok3 = self.peek()
-                self.error("factor", _tok3.token_type if _tok3 else "EOF")
+                self.error("factor", _tok3)
                 return None
             node.add_children(sub)
             return node
@@ -702,7 +735,7 @@ class Parser:
             expr = self.parse_expression()
             if not expr:
                 _tok4 = self.peek()
-                self.error("expression", _tok4.token_type if _tok4 else "EOF")
+                self.error("expression", _tok4)
                 return None
             node.add_children(expr)
 
@@ -722,7 +755,7 @@ class Parser:
             return node
 
         # if no form matched
-        self.error("factor", f"{tok.token_type}({tok.value})")
+        self.error("factor", tok)
         return None
 
     def parse_relational_operator(self):

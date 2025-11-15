@@ -2,7 +2,7 @@ import os
 import json
 import sys
 import re
-from .pascal_token import Token
+from src.common.pascal_token import Token
 
 def load_dfa_rules(filepath: str | None = None) -> dict:
     """

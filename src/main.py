@@ -1,5 +1,5 @@
 import sys
-from app import app
+from src.app import app
 
 if __name__ == "__main__":
     """

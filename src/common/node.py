@@ -1,4 +1,4 @@
-from pascal_token import Token
+from src.common.pascal_token import Token
 
 class Node:
     def __init__(self, label, token=None):
