@@ -58,7 +58,7 @@ class Parser:
         # Aturan grammar:
         # <program> ::= <program-header> <declaration-part> <compound-statement> DOT
         
-        print("Memulai parsing program...")
+        print("\nSTART PARSING...")
 
         program_node = Node("<program>")
 
@@ -80,7 +80,7 @@ class Parser:
             
         program_node.print_tree()
 
-        print("Selesai parsing program.")
+        print("\nFINISH PARSING...")
         return program_node
         
     
@@ -228,11 +228,15 @@ class Parser:
         return node
 
     def parse_type(self):
-        """<type> ::= 'integer' | 'real' | 'boolean' | 'char' | <array-type>"""
+        """<type> ::= 'integer' | 'real' | 'boolean' | 'char' | <array-type> | IDENTIFIER"""
         node = Node("<type>")
         tok = self.peek()
 
-        if tok and tok.token_type == "KEYWORD":
+        if not tok:
+            self.error("type", None)
+            return None
+
+        if tok.token_type == "KEYWORD":
             kw = tok.value.lower()
             if kw in ("integer", "real", "boolean", "char"):
                 node.add_children(Node("KEYWORD", self.consume_token()))
@@ -243,14 +247,12 @@ class Parser:
                     node.add_children(array_node)
                 return node
 
-        # kalau tidak cocok grammar, catat error tapi tetap coba lanjut
-        if tok:
-            self.error("type", tok)
-            node.add_children(Node(tok.token_type, self.consume_token()))
+        if tok.token_type == "IDENTIFIER": # custom type
+            node.add_children(Node("IDENTIFIER", self.consume_token()))
             return node
 
-        self.error("type", None)
-        return node
+        self.error("type", tok)
+        return None
 
     def parse_array_type(self):
         """<array-type> ::= 'larik' '[' <range> ']' 'dari' <type>"""
@@ -539,29 +541,47 @@ class Parser:
         """
         node = Node("<compound-statement>")
         
-        # begin
-        tok_begin = self.peek()
-        if tok_begin and tok_begin.token_type == "KEYWORD" and tok_begin.value.lower() == "mulai":
-            node.add_children(Node("KEYWORD", self.consume_token()))
-            while True:
-                tok_inner = self.peek()
-                if not tok_inner or (tok_inner.token_type == "KEYWORD" and tok_inner.value.lower() == "selesai"):
-                    break
-                statement_node = self.parse_statement()
-                if statement_node:
-                    node.add_children(statement_node)
-                elif self.peek() == tok_inner:
-                    self.consume_token()
-
-            end_tok = self.peek()
-            if end_tok and end_tok.token_type == "KEYWORD" and end_tok.value.lower() == "selesai":
-                node.add_children(Node("KEYWORD", self.consume_token()))
-            else:
-                self.error("KEYWORD(selesai)", end_tok)
-        else:
+        tok_begin = self.match_token("KEYWORD", "mulai")
+        if not tok_begin:
+            # Tidak ada 'mulai', error fatal untuk compound statement
             self.error("KEYWORD(mulai)", self.peek())
+            return None 
+        
+        node.add_children(Node("KEYWORD", tok_begin))
+        
+        # Cek apakah bloknya kosong (langsung 'selesai')
+        if self.peek() and self.peek().value.lower() == "selesai":
+            pass
+        else:
+            # Parse <statement> pertama
+            statement_node = self.parse_statement()
+            if not statement_node: # Gagal parse statement pertama, ini error
+                return node 
+            node.add_children(statement_node)
 
+            # Loop untuk { SEMICOLON <statement> }
+            while self.peek() and self.peek().token_type == "SEMICOLON":
+                semicolon_node = Node("SEMICOLON", self.consume_token())
 
+                # Handle trailing semicolon (valid): '...; selesai'
+                if self.peek() and self.peek().value.lower() == "selesai":
+                    node.add_children(semicolon_node) 
+                    break 
+
+                node.add_children(semicolon_node) # Tambahkan semicolon
+
+                # Wajib ada statement setelah semicolon (jika bukan 'selesai')
+                statement_node = self.parse_statement()
+                if not statement_node:
+                    return node
+                node.add_children(statement_node)
+        
+        end_tok = self.match_token("KEYWORD", "selesai")
+        if not end_tok:
+            self.error("KEYWORD(selesai)", self.peek())
+        else:
+            node.add_children(Node("KEYWORD", end_tok))
+        
         return node
     
     def parse_assignment_statement(self):
