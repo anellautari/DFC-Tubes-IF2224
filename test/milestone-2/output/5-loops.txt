@@ -1,0 +1,191 @@
+KEYWORD(program)
+IDENTIFIER(TestLoops)
+SEMICOLON(;)
+KEYWORD(variabel)
+IDENTIFIER(i)
+COMMA(,)
+IDENTIFIER(j)
+COLON(:)
+KEYWORD(integer)
+SEMICOLON(;)
+KEYWORD(mulai)
+IDENTIFIER(i)
+ASSIGN_OPERATOR(:=)
+NUMBER(1)
+SEMICOLON(;)
+KEYWORD(selama)
+LPARENTHESIS(()
+IDENTIFIER(i)
+RELATIONAL_OPERATOR(<)
+NUMBER(10)
+RPARENTHESIS())
+KEYWORD(lakukan)
+KEYWORD(mulai)
+KEYWORD(untuk)
+IDENTIFIER(j)
+ASSIGN_OPERATOR(:=)
+NUMBER(1)
+KEYWORD(ke)
+NUMBER(5)
+KEYWORD(lakukan)
+IDENTIFIER(writeln)
+LPARENTHESIS(()
+IDENTIFIER(i)
+COMMA(,)
+IDENTIFIER(j)
+RPARENTHESIS())
+SEMICOLON(;)
+IDENTIFIER(i)
+ASSIGN_OPERATOR(:=)
+IDENTIFIER(i)
+ARITHMETIC_OPERATOR(+)
+NUMBER(1)
+SEMICOLON(;)
+KEYWORD(selesai)
+SEMICOLON(;)
+KEYWORD(untuk)
+IDENTIFIER(i)
+ASSIGN_OPERATOR(:=)
+NUMBER(10)
+KEYWORD(turun_ke)
+NUMBER(1)
+KEYWORD(lakukan)
+IDENTIFIER(writeln)
+LPARENTHESIS(()
+IDENTIFIER(i)
+RPARENTHESIS())
+SEMICOLON(;)
+KEYWORD(selesai)
+DOT(.)
+
+START PARSING...
+
+└── <program>
+    ├── <program-header>
+    │   ├── KEYWORD(program)
+    │   ├── IDENTIFIER(TestLoops)
+    │   └── SEMICOLON(;)
+    ├── <declaration-part>
+    │   └── <var-declaration>
+    │       ├── KEYWORD(variabel)
+    │       ├── <identifier-list>
+    │       │   ├── IDENTIFIER(i)
+    │       │   ├── COMMA(,)
+    │       │   └── IDENTIFIER(j)
+    │       ├── COLON(:)
+    │       ├── <type>
+    │       │   └── KEYWORD(integer)
+    │       └── SEMICOLON(;)
+    ├── <compound-statement>
+    │   ├── KEYWORD(mulai)
+    │   ├── <assignment-statement>
+    │   │   ├── IDENTIFIER(i)
+    │   │   ├── ASSIGN_OPERATOR(:=)
+    │   │   └── <expression>
+    │   │       └── <simple-expression>
+    │   │           └── <term>
+    │   │               └── <factor>
+    │   │                   └── NUMBER(1)
+    │   ├── SEMICOLON(;)
+    │   ├── <while-statement>
+    │   │   ├── KEYWORD(selama)
+    │   │   ├── <expression>
+    │   │   │   └── <simple-expression>
+    │   │   │       └── <term>
+    │   │   │           └── <factor>
+    │   │   │               ├── LPARENTHESIS(()
+    │   │   │               ├── <expression>
+    │   │   │               │   ├── <simple-expression>
+    │   │   │               │   │   └── <term>
+    │   │   │               │   │       └── <factor>
+    │   │   │               │   │           └── IDENTIFIER(i)
+    │   │   │               │   ├── <relational-operator>
+    │   │   │               │   │   └── RELATIONAL_OPERATOR(<)
+    │   │   │               │   └── <simple-expression>
+    │   │   │               │       └── <term>
+    │   │   │               │           └── <factor>
+    │   │   │               │               └── NUMBER(10)
+    │   │   │               └── RPARENTHESIS())
+    │   │   ├── KEYWORD(lakukan)
+    │   │   └── <compound-statement>
+    │   │       ├── KEYWORD(mulai)
+    │   │       ├── <for-statement>
+    │   │       │   ├── KEYWORD(untuk)
+    │   │       │   ├── IDENTIFIER(j)
+    │   │       │   ├── ASSIGN_OPERATOR(:=)
+    │   │       │   ├── <expression>
+    │   │       │   │   └── <simple-expression>
+    │   │       │   │       └── <term>
+    │   │       │   │           └── <factor>
+    │   │       │   │               └── NUMBER(1)
+    │   │       │   ├── KEYWORD(ke)
+    │   │       │   ├── <expression>
+    │   │       │   │   └── <simple-expression>
+    │   │       │   │       └── <term>
+    │   │       │   │           └── <factor>
+    │   │       │   │               └── NUMBER(5)
+    │   │       │   ├── KEYWORD(lakukan)
+    │   │       │   └── <procedure-function-call>
+    │   │       │       ├── IDENTIFIER(writeln)
+    │   │       │       ├── LPARENTHESIS(()
+    │   │       │       ├── <parameter-list>
+    │   │       │       │   ├── <expression>
+    │   │       │       │   │   └── <simple-expression>
+    │   │       │       │   │       └── <term>
+    │   │       │       │   │           └── <factor>
+    │   │       │       │   │               └── IDENTIFIER(i)
+    │   │       │       │   ├── COMMA(,)
+    │   │       │       │   └── <expression>
+    │   │       │       │       └── <simple-expression>
+    │   │       │       │           └── <term>
+    │   │       │       │               └── <factor>
+    │   │       │       │                   └── IDENTIFIER(j)
+    │   │       │       └── RPARENTHESIS())
+    │   │       ├── SEMICOLON(;)
+    │   │       ├── <assignment-statement>
+    │   │       │   ├── IDENTIFIER(i)
+    │   │       │   ├── ASSIGN_OPERATOR(:=)
+    │   │       │   └── <expression>
+    │   │       │       └── <simple-expression>
+    │   │       │           ├── <term>
+    │   │       │           │   └── <factor>
+    │   │       │           │       └── IDENTIFIER(i)
+    │   │       │           ├── <additive-operator>
+    │   │       │           │   └── ARITHMETIC_OPERATOR(+)
+    │   │       │           └── <term>
+    │   │       │               └── <factor>
+    │   │       │                   └── NUMBER(1)
+    │   │       ├── SEMICOLON(;)
+    │   │       └── KEYWORD(selesai)
+    │   ├── SEMICOLON(;)
+    │   ├── <for-statement>
+    │   │   ├── KEYWORD(untuk)
+    │   │   ├── IDENTIFIER(i)
+    │   │   ├── ASSIGN_OPERATOR(:=)
+    │   │   ├── <expression>
+    │   │   │   └── <simple-expression>
+    │   │   │       └── <term>
+    │   │   │           └── <factor>
+    │   │   │               └── NUMBER(10)
+    │   │   ├── KEYWORD(turun_ke)
+    │   │   ├── <expression>
+    │   │   │   └── <simple-expression>
+    │   │   │       └── <term>
+    │   │   │           └── <factor>
+    │   │   │               └── NUMBER(1)
+    │   │   ├── KEYWORD(lakukan)
+    │   │   └── <procedure-function-call>
+    │   │       ├── IDENTIFIER(writeln)
+    │   │       ├── LPARENTHESIS(()
+    │   │       ├── <parameter-list>
+    │   │       │   └── <expression>
+    │   │       │       └── <simple-expression>
+    │   │       │           └── <term>
+    │   │       │               └── <factor>
+    │   │       │                   └── IDENTIFIER(i)
+    │   │       └── RPARENTHESIS())
+    │   ├── SEMICOLON(;)
+    │   └── KEYWORD(selesai)
+    └── DOT(.)
+
+FINISH PARSING...

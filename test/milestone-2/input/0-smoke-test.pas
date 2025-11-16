@@ -1,0 +1,3 @@
+program tes;
+mulai
+selesai.

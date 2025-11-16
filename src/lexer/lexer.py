@@ -1,12 +1,14 @@
-from common.pascal_token import Token
-from .dfa import DFA
+import logging
+from src.common.pascal_token import Token
+from src.common.errors import LexicalError
+from src.lexer.dfa import DFA
 
 class Lexer:
     """
     Lexer: mengubah string kode sumber mentah menjadi daftar objek Token
     berdasarkan aturan yang didefinisikan dalam file DFA.
     """
-    def __init__(self, source_code: str, dfa_rules: dict):
+    def __init__(self, source_code: str, dfa_rules: dict, raise_on_error: bool = False):
         """
         Inisialisasi lexer.
         
@@ -20,6 +22,7 @@ class Lexer:
         self.current_line = 1
         self.current_col = 1
         self.fatal_error = False
+        self.raise_on_error = raise_on_error
         
         self.keywords = set(dfa_rules.get("KEYWORDS", []))
         self.word_arithmetic = set(dfa_rules.get("WORD_ARITHMETIC", []))
@@ -62,13 +65,19 @@ class Lexer:
         if last_final_state and self.dfa_rules["final_states"][last_final_state].get("is_error", False):
             error_type = self.dfa_rules["final_states"][last_final_state].get("error_type", "UNKNOWN")
             if error_type == "UNTERMINATED_STRING":
-                print(f"Error: Unterminated string literal at Line {start_line}:{start_col}")
+                msg = f"Unterminated string literal"
+                logging.error(f"{msg} at Line {start_line}:{start_col}")
+                if self.raise_on_error:
+                    raise LexicalError(msg, start_line, start_col)
             self.fatal_error = True
             self._advance_pos()
             return None
 
         if pos_tracker >= len(self.source_code) and current_state == "STRING":
-            print(f"Error: Unterminated string literal at Line {start_line}:{start_col}")
+            msg = "Unterminated string literal"
+            logging.error(f"{msg} at Line {start_line}:{start_col}")
+            if self.raise_on_error:
+                raise LexicalError(msg, start_line, start_col)
             self.fatal_error = True
             return None
 
@@ -127,7 +136,10 @@ class Lexer:
         """
         Menangani error karakter tidak dikenal.
         """
-        print(f"Error: Invalid character '{char}' at Line {line}:{col}")
+        msg = f"Invalid character '{char}'"
+        logging.error(f"{msg} at Line {line}:{col}")
+        if self.raise_on_error:
+            raise LexicalError(msg, line, col)
 
     def _advance_pos(self):
         """Helper untuk memajukan lexer 1 karakter dan update line/col."""

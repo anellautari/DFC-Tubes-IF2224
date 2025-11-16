@@ -1,0 +1,24 @@
+ERROR:root:Syntax error: expected RPARENTHESIS()), but got SEMICOLON(;) @ 4:19
+ERROR:root:Syntax error: expected DOT(.), but got SEMICOLON(;) @ 4:19
+KEYWORD(program)
+IDENTIFIER(ErrorTest)
+SEMICOLON(;)
+KEYWORD(mulai)
+IDENTIFIER(writeln)
+LPARENTHESIS(()
+STRING_LITERAL('Hello')
+SEMICOLON(;)
+KEYWORD(selesai)
+DOT(.)
+
+START PARSING...
+
+└── <program>
+    ├── <program-header>
+    │   ├── KEYWORD(program)
+    │   ├── IDENTIFIER(ErrorTest)
+    │   └── SEMICOLON(;)
+    └── <compound-statement>
+        └── KEYWORD(mulai)
+
+FINISH PARSING...
