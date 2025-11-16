@@ -58,7 +58,7 @@ class Parser:
         # Aturan grammar:
         # <program> ::= <program-header> <declaration-part> <compound-statement> DOT
         
-        print("\nSTART PARSING...")
+        print("\nSTART PARSING...\n")
 
         program_node = Node("<program>")
 
