@@ -479,7 +479,7 @@ class Parser:
             if next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "ASSIGN_OPERATOR":
                 return self.parse_assignment_statement()
             else:
-                return self.parse_procedure_call()
+                return self.parse_procedure_function_call()
         self.error("statement", tok)
         return None
         
@@ -606,7 +606,7 @@ class Parser:
         
         return node
 
-    def parse_procedure_call(self):
+    def parse_procedure_function_call(self):
         # <procedure/function-call> ::= IDENTIFIER LPARENTHESIS [ <parameter-list> ] RPARENTHESIS
         node = Node("<procedure-function-call>")
 
@@ -811,7 +811,7 @@ class Parser:
             next_tok_index = self.current_index + 1
             if next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "LPARENTHESIS":
                 # Unified procedure/function call node (Rev 2+3)
-                return self.parse_procedure_call()
+                return self.parse_procedure_function_call()
             else:
                 node.add_children(Node("IDENTIFIER", self.consume_token()))
                 return node
