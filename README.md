@@ -4,11 +4,11 @@
 ### IF2224 - Teori Bahasa Formal dan Otomata
 
 <p>
-Implementasi Lexical Analyzer untuk subset bahasa PASCAL-S menggunakan Deterministic Finite Automaton (DFA). 
+Implementasi Lexical Analyzer (Lexer) dan Syntax Analyzer (Parser) untuk subset bahasa PASCAL-S. Lexer dibangun menggunakan Deterministic Finite Automaton (DFA), dan Parser dibangun menggunakan metode Recursive Descent. 
 </p>
 
 <p>
-  <img alt="Project Status" src="https://img.shields.io/badge/status-milestone_1-blue.svg">
+  <img alt="Project Status" src="https://img.shields.io/badge/status-milestone_2-blue.svg">
 </p>
 
 </div>
@@ -59,22 +59,26 @@ cd DFC-Tubes-IF2224
 ```
 ## Cara Penggunaan
 
-Untuk hanya menjalankan program, gunakan perintah berikut:
+Gunakan perintah `python -m src.main` (atau `python3` tergantung sistem Anda) dari direktori root proyek:
 ```bash
-python src/main.py [path_ke_file_pascal]
+python -m src.main [path_ke_file_pascal]
 ```
 Contoh:
 ```bash
-python src/main.py test/milestone-2/input/1-basic.pas
+python -m src.main test/milestone-2/input/1-basic.pas
 ```
 
-Untuk menyimpan hasil tokenisasi ke dalam file '.txt', gunakan perintah berikut:
+Untuk menyimpan hasil tokenisasi ke dalam file '.txt', karena Parse Tree menggunakan karakter Unicode (`└──`, `│`), menyimpan output di Windows CMD/PowerShell standar dapat menyebabkan error atau karakter aneh.
+
+Direkomendasikan menjalankan program melalui **WSL (Windows Subsystem for Linux)**, yang sepenuhnya mendukung UTF-8.
+
+Gunakan perintah &> di terminal WSL untuk menyimpan output dan error ke file .txt:
 ```bash
-python src/main.py [path_ke_file_pascal] > [path_ke_file_output]
+python3 -m src.main.py [path_ke_file_pascal] &> [path_ke_file_output]
 ```
 Contoh:
 ```bash
-python src/main.py test/milestone-2/input/1-basic.pas > test/milestone-2/output/1-basic.txt
+python3 -m src.main test/milestone-2/input/1-basic.pas &> test/milestone-2/output/1-basic.txt
 ```
 
 ## Struktur Proyek
