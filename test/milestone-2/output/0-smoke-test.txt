@@ -1,0 +1,19 @@
+KEYWORD(program)
+IDENTIFIER(tes)
+SEMICOLON(;)
+KEYWORD(mulai)
+KEYWORD(selesai)
+DOT(.)
+
+START PARSING...
+└── <program>
+    ├── <program-header>
+    │   ├── KEYWORD(program)
+    │   ├── IDENTIFIER(tes)
+    │   └── SEMICOLON(;)
+    ├── <compound-statement>
+    │   ├── KEYWORD(mulai)
+    │   └── KEYWORD(selesai)
+    └── DOT(.)
+
+FINISH PARSING...

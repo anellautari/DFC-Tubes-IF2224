@@ -1,0 +1,46 @@
+KEYWORD(program)
+IDENTIFIER(Basic)
+SEMICOLON(;)
+KEYWORD(variabel)
+IDENTIFIER(x)
+COLON(:)
+KEYWORD(integer)
+SEMICOLON(;)
+KEYWORD(mulai)
+IDENTIFIER(x)
+ASSIGN_OPERATOR(:=)
+NUMBER(10)
+SEMICOLON(;)
+KEYWORD(selesai)
+DOT(.)
+
+START PARSING...
+└── <program>
+    ├── <program-header>
+    │   ├── KEYWORD(program)
+    │   ├── IDENTIFIER(Basic)
+    │   └── SEMICOLON(;)
+    ├── <declaration-part>
+    │   └── <var-declaration>
+    │       ├── KEYWORD(variabel)
+    │       ├── <identifier-list>
+    │       │   └── IDENTIFIER(x)
+    │       ├── COLON(:)
+    │       ├── <type>
+    │       │   └── KEYWORD(integer)
+    │       └── SEMICOLON(;)
+    ├── <compound-statement>
+    │   ├── KEYWORD(mulai)
+    │   ├── <assignment-statement>
+    │   │   ├── IDENTIFIER(x)
+    │   │   ├── ASSIGN_OPERATOR(:=)
+    │   │   └── <expression>
+    │   │       └── <simple-expression>
+    │   │           └── <term>
+    │   │               └── <factor>
+    │   │                   └── NUMBER(10)
+    │   ├── SEMICOLON(;)
+    │   └── KEYWORD(selesai)
+    └── DOT(.)
+
+FINISH PARSING...

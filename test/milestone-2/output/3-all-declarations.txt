@@ -1,0 +1,240 @@
+KEYWORD(program)
+IDENTIFIER(AllDeclarations)
+SEMICOLON(;)
+KEYWORD(konstanta)
+IDENTIFIER(PI)
+RELATIONAL_OPERATOR(=)
+NUMBER(3.14)
+SEMICOLON(;)
+KEYWORD(tipe)
+IDENTIFIER(MyArray)
+RELATIONAL_OPERATOR(=)
+KEYWORD(larik)
+LBRACKET([)
+NUMBER(1)
+RANGE_OPERATOR(..)
+NUMBER(10)
+RBRACKET(])
+KEYWORD(dari)
+KEYWORD(real)
+SEMICOLON(;)
+KEYWORD(variabel)
+IDENTIFIER(x)
+COLON(:)
+KEYWORD(integer)
+SEMICOLON(;)
+IDENTIFIER(y)
+COLON(:)
+KEYWORD(real)
+SEMICOLON(;)
+IDENTIFIER(arr)
+COLON(:)
+IDENTIFIER(MyArray)
+SEMICOLON(;)
+KEYWORD(prosedur)
+IDENTIFIER(TestProc)
+LPARENTHESIS(()
+IDENTIFIER(a)
+COLON(:)
+KEYWORD(integer)
+RPARENTHESIS())
+SEMICOLON(;)
+KEYWORD(mulai)
+KEYWORD(selesai)
+SEMICOLON(;)
+KEYWORD(fungsi)
+IDENTIFIER(TestFunc)
+LPARENTHESIS(()
+IDENTIFIER(b)
+COLON(:)
+KEYWORD(integer)
+RPARENTHESIS())
+COLON(:)
+KEYWORD(real)
+SEMICOLON(;)
+KEYWORD(mulai)
+IDENTIFIER(TestFunc)
+ASSIGN_OPERATOR(:=)
+IDENTIFIER(b)
+ARITHMETIC_OPERATOR(*)
+IDENTIFIER(PI)
+SEMICOLON(;)
+KEYWORD(selesai)
+SEMICOLON(;)
+KEYWORD(mulai)
+IDENTIFIER(x)
+ASSIGN_OPERATOR(:=)
+NUMBER(10)
+SEMICOLON(;)
+IDENTIFIER(y)
+ASSIGN_OPERATOR(:=)
+IDENTIFIER(TestFunc)
+LPARENTHESIS(()
+IDENTIFIER(x)
+RPARENTHESIS())
+SEMICOLON(;)
+IDENTIFIER(TestProc)
+LPARENTHESIS(()
+IDENTIFIER(x)
+RPARENTHESIS())
+SEMICOLON(;)
+KEYWORD(selesai)
+DOT(.)
+
+START PARSING...
+└── <program>
+    ├── <program-header>
+    │   ├── KEYWORD(program)
+    │   ├── IDENTIFIER(AllDeclarations)
+    │   └── SEMICOLON(;)
+    ├── <declaration-part>
+    │   ├── <const-declaration>
+    │   │   ├── KEYWORD(konstanta)
+    │   │   ├── IDENTIFIER(PI)
+    │   │   ├── RELATIONAL_OPERATOR(=)
+    │   │   ├── <expression>
+    │   │   │   └── <simple-expression>
+    │   │   │       └── <term>
+    │   │   │           └── <factor>
+    │   │   │               └── NUMBER(3.14)
+    │   │   └── SEMICOLON(;)
+    │   ├── <type-declaration>
+    │   │   ├── KEYWORD(tipe)
+    │   │   ├── IDENTIFIER(MyArray)
+    │   │   ├── RELATIONAL_OPERATOR(=)
+    │   │   ├── <type>
+    │   │   │   └── <array-type>
+    │   │   │       ├── KEYWORD(larik)
+    │   │   │       ├── LBRACKET([)
+    │   │   │       ├── <range>
+    │   │   │       │   ├── <expression>
+    │   │   │       │   │   └── <simple-expression>
+    │   │   │       │   │       └── <term>
+    │   │   │       │   │           └── <factor>
+    │   │   │       │   │               └── NUMBER(1)
+    │   │   │       │   ├── RANGE_OPERATOR(..)
+    │   │   │       │   └── <expression>
+    │   │   │       │       └── <simple-expression>
+    │   │   │       │           └── <term>
+    │   │   │       │               └── <factor>
+    │   │   │       │                   └── NUMBER(10)
+    │   │   │       ├── RBRACKET(])
+    │   │   │       ├── KEYWORD(dari)
+    │   │   │       └── <type>
+    │   │   │           └── KEYWORD(real)
+    │   │   └── SEMICOLON(;)
+    │   ├── <var-declaration>
+    │   │   ├── KEYWORD(variabel)
+    │   │   ├── <identifier-list>
+    │   │   │   └── IDENTIFIER(x)
+    │   │   ├── COLON(:)
+    │   │   ├── <type>
+    │   │   │   └── KEYWORD(integer)
+    │   │   ├── SEMICOLON(;)
+    │   │   ├── <identifier-list>
+    │   │   │   └── IDENTIFIER(y)
+    │   │   ├── COLON(:)
+    │   │   ├── <type>
+    │   │   │   └── KEYWORD(real)
+    │   │   ├── SEMICOLON(;)
+    │   │   ├── <identifier-list>
+    │   │   │   └── IDENTIFIER(arr)
+    │   │   ├── COLON(:)
+    │   │   ├── <type>
+    │   │   │   └── IDENTIFIER(MyArray)
+    │   │   └── SEMICOLON(;)
+    │   ├── <procedure-declaration>
+    │   │   ├── KEYWORD(prosedur)
+    │   │   ├── IDENTIFIER(TestProc)
+    │   │   ├── <formal-parameter-list>
+    │   │   │   ├── LPARENTHESIS(()
+    │   │   │   ├── <parameter-group>
+    │   │   │   │   ├── <identifier-list>
+    │   │   │   │   │   └── IDENTIFIER(a)
+    │   │   │   │   ├── COLON(:)
+    │   │   │   │   └── <type>
+    │   │   │   │       └── KEYWORD(integer)
+    │   │   │   └── RPARENTHESIS())
+    │   │   ├── SEMICOLON(;)
+    │   │   ├── <block>
+    │   │   │   └── <compound-statement>
+    │   │   │       ├── KEYWORD(mulai)
+    │   │   │       └── KEYWORD(selesai)
+    │   │   └── SEMICOLON(;)
+    │   └── <function-declaration>
+    │       ├── KEYWORD(fungsi)
+    │       ├── IDENTIFIER(TestFunc)
+    │       ├── <formal-parameter-list>
+    │       │   ├── LPARENTHESIS(()
+    │       │   ├── <parameter-group>
+    │       │   │   ├── <identifier-list>
+    │       │   │   │   └── IDENTIFIER(b)
+    │       │   │   ├── COLON(:)
+    │       │   │   └── <type>
+    │       │   │       └── KEYWORD(integer)
+    │       │   └── RPARENTHESIS())
+    │       ├── COLON(:)
+    │       ├── <type>
+    │       │   └── KEYWORD(real)
+    │       ├── SEMICOLON(;)
+    │       ├── <block>
+    │       │   └── <compound-statement>
+    │       │       ├── KEYWORD(mulai)
+    │       │       ├── <assignment-statement>
+    │       │       │   ├── IDENTIFIER(TestFunc)
+    │       │       │   ├── ASSIGN_OPERATOR(:=)
+    │       │       │   └── <expression>
+    │       │       │       └── <simple-expression>
+    │       │       │           └── <term>
+    │       │       │               ├── <factor>
+    │       │       │               │   └── IDENTIFIER(b)
+    │       │       │               ├── <multiplicative-operator>
+    │       │       │               │   └── ARITHMETIC_OPERATOR(*)
+    │       │       │               └── <factor>
+    │       │       │                   └── IDENTIFIER(PI)
+    │       │       ├── SEMICOLON(;)
+    │       │       └── KEYWORD(selesai)
+    │       └── SEMICOLON(;)
+    ├── <compound-statement>
+    │   ├── KEYWORD(mulai)
+    │   ├── <assignment-statement>
+    │   │   ├── IDENTIFIER(x)
+    │   │   ├── ASSIGN_OPERATOR(:=)
+    │   │   └── <expression>
+    │   │       └── <simple-expression>
+    │   │           └── <term>
+    │   │               └── <factor>
+    │   │                   └── NUMBER(10)
+    │   ├── SEMICOLON(;)
+    │   ├── <assignment-statement>
+    │   │   ├── IDENTIFIER(y)
+    │   │   ├── ASSIGN_OPERATOR(:=)
+    │   │   └── <expression>
+    │   │       └── <simple-expression>
+    │   │           └── <term>
+    │   │               └── <function-call>
+    │   │                   ├── IDENTIFIER(TestFunc)
+    │   │                   ├── LPARENTHESIS(()
+    │   │                   ├── <parameter-list>
+    │   │                   │   └── <expression>
+    │   │                   │       └── <simple-expression>
+    │   │                   │           └── <term>
+    │   │                   │               └── <factor>
+    │   │                   │                   └── IDENTIFIER(x)
+    │   │                   └── RPARENTHESIS())
+    │   ├── SEMICOLON(;)
+    │   ├── <procedure-function-call>
+    │   │   ├── IDENTIFIER(TestProc)
+    │   │   ├── LPARENTHESIS(()
+    │   │   ├── <parameter-list>
+    │   │   │   └── <expression>
+    │   │   │       └── <simple-expression>
+    │   │   │           └── <term>
+    │   │   │               └── <factor>
+    │   │   │                   └── IDENTIFIER(x)
+    │   │   └── RPARENTHESIS())
+    │   ├── SEMICOLON(;)
+    │   └── KEYWORD(selesai)
+    └── DOT(.)
+
+FINISH PARSING...
