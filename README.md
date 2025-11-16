@@ -30,9 +30,13 @@ Implementasi Lexical Analyzer untuk subset bahasa PASCAL-S menggunakan Determini
 
 ## Tentang Proyek
 
-Proyek ini adalah implementasi dari **Milestone 1: Lexical Analyzer (Lexer)** untuk *compiler* PASCAL-S. Lexer ini dirancang untuk memindai file kode sumber `.pas` dan mengubahnya menjadi serangkaian token yang terdefinisi.
+Proyek ini adalah implementasi dari **Milestone 2: Syntax Analyzer (Parser)** untuk compiler PASCAL-S. Pada tahap ini, parser bertugas membaca deretan token yang dihasilkan oleh lexer (Milestone 1) dan membangun parse tree berdasarkan aturan grammar PASCAL-S.
 
-Inti dari *lexer* ini adalah mesin **Deterministic Finite Automaton (DFA)** yang aturannya didefinisikan secara eksternal dalam file `src/dfa_rules.json`. Pendekatan ini membuat *lexer* menjadi modular dan mudah untuk dikonfigurasi. Program membaca file sumber, memprosesnya karakter per karakter berdasarkan aturan transisi DFA, dan mencetak daftar token yang berhasil dikenali ke konsol.
+Parser yang digunakan adalah **Recursive Descent Parser**, yaitu parser top-down yang secara langsung menerjemahkan setiap aturan grammar ke dalam fungsi-fungsi spesifik. Struktur dan alur parsing diimplementasikan secara modular di dalam file ```src/parser/parser.py```, sementara struktur node parse tree didefinisikan di ```src/common/node.py```.
+
+Parser membaca token satu per satu menggunakan fungsi utilitas seperti ```peek()```, ```consume_token()```, dan ```match_token()``` yang mengatur aliran token dan memastikan kesesuaian dengan grammar. Jika ditemukan token yang tidak valid, parser akan menghasilkan pesan error yang informatif melalui mekanisme error handling.
+
+Output dari Milestone 2 berupa parse tree yang dicetak dalam format indentasi, yang merepresentasikan struktur sintaks dari program PASCAL-S yang dibaca.
 
 ### Teknologi
 
