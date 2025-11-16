@@ -4,7 +4,7 @@
 ### IF2224 - Teori Bahasa Formal dan Otomata
 
 <p>
-Implementasi Lexical Analyzer (Lexer) dan Syntax Analyzer (Parser) untuk subset bahasa PASCAL-S. Lexer dibangun menggunakan Deterministic Finite Automaton (DFA), dan Parser dibangun menggunakan metode Recursive Descent. 
+Implementasi Syntax Analyzer untuk subset bahasa PASCAL-S menggunakan Recursive Descent Parsing dan konstruksi Parse Tree.
 </p>
 
 <p>
@@ -123,11 +123,11 @@ DFC-Tubes-IF2224/
 ## Kontributor
 <div align="center">
   
-| Nama | NIM | Tugas |
-| :--- | :---: | :---: |
-| Mayla Yaffa Ludmilla | 13523050 | • Desain dan pembuatan Diagram Transisi DFA <br> • Penyusunan dan finalisasi Laporan |
-| Anella Utari Gunadi | 13523078 | • Implementasi simulator DFA dan input <br> • Inisiasi dan penyusunan awal Laporan |
-| Muhammad Edo Raduputu Aprima | 13523096 | • Inisiasi repository dan struktur proyek <br>• Pengujian program dan pembuatan README.md|
-| Athian Nugraha Muarajuang | 13523106 | • Implementasi Aturan DFA (dfa_rules.json) <br>• Implementasi logika inti Lexer dan output |
+| Nama | NIM | Tugas | Persentase (%) |
+| :--- | :---: | :---: | :---: |
+| Mayla Yaffa Ludmilla | 13523050 | • Implementasi statement & grammar utama parser <br> • Laporan dasar teori & implementasi | 25 |
+| Anella Utari Gunadi | 13523078 | • Implementasi declaration & subprogram parser <br> • Laporan implementasi & deskripsi tugas | 25 |
+| Muhammad Edo Raduputu Aprima | 13523096 | • Definisi aturan grammar, implementasi assignment statement, procedure function, dan expression <br>• Pengujian program & laporan testing | 25 |
+| Athian Nugraha Muarajuang | 13523106 | • Implementasi error handling, parse term, factor, serta operators <br>• Laporan kesimpulan dan saran | 25 |
 
 </div>
