@@ -61,7 +61,7 @@ python src/main.py [path_ke_file_pascal]
 ```
 Contoh:
 ```bash
-python src/main.py test/milestone-1/input/1-basic.pas
+python src/main.py test/milestone-2/input/1-basic.pas
 ```
 
 Untuk menyimpan hasil tokenisasi ke dalam file '.txt', gunakan perintah berikut:
@@ -70,29 +70,46 @@ python src/main.py [path_ke_file_pascal] > [path_ke_file_output]
 ```
 Contoh:
 ```bash
-python src/main.py test/milestone-1/input/1-basic.pas > test/milestone-1/output/1-basic.txt
+python src/main.py test/milestone-2/input/1-basic.pas > test/milestone-2/output/1-basic.txt
 ```
 
 ## Struktur Proyek
 <pre>
 DFC-Tubes-IF2224/
-├── src/
-│   ├── main.py
-│   ├── app.py
-│   ├── lexer.py                  # Logika inti Lexer
-│   ├── dfa.py                    # Simulator DFA
-│   ├── dfa_rules.json            # Aturan transisi DFA, final state, keywords
-│   ├── pascal_token.py           # Kelas data (dataclass) untuk Token
-│   └── utils.py                  # Fungsi helper (I/O file)
-├── test/
-│   └── milestone-1/
-│       └── input/                # Berisi file .pas
-│       └── output/
 ├── doc/
-│   ├── Laporan-1-DFC.pdf   
-│   └── Diagram-1-DFC.pdf         # Diagram Transisi DFA
-├── .gitignore
-└── README.md
+│   ├── Diagram-1-DFC.pdf      
+│   ├── Laporan-1-DFC.pdf     
+│   └── Laporan-2-DFC.pdf     
+│
+├── src/
+│   ├── common/
+│   │   ├── errors.py             # Kelas error & exception khusus parser/lexer
+│   │   ├── node.py               # Struktur Node untuk parse tree
+│   │   ├── pascal_token.py       # Definisi kelas Token (dataclass)
+│   │   └── utils.py              # Fungsi helper (I/O file)
+│   │
+│   ├── lexer/
+│   │   ├── dfa_rules.json        # Aturan transisi DFA + daftar keyword
+│   │   ├── dfa.py                # Simulator DFA untuk mengenali token
+│   │   └── lexer.py              # Implementasi lexer/tokenizer
+│   │
+│   ├── parser/
+│   │   └── parser.py             # Implementasi recursive descent parser
+│   │
+│   ├── main.py                
+│   └── app.py                 
+│
+├── test/
+│   ├── milestone-1/
+│   │   ├── input/                # Test case lexer (.pas)
+│   │   └── output/               # Expected output token
+│   │
+│   └── milestone-2/
+│       ├── input/                # Test case parser (.pas)
+│       └── output/               # Expected parse tree
+│
+├── .gitignore                   
+└── README.md                    
 </pre>
 
 ## Kontributor
