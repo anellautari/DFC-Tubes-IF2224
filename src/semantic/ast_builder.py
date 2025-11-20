@@ -71,7 +71,7 @@ class ASTBuilder:
 				
 			name = ident_node.token.value
 			i += 1  # move past IDENTIFIER
-			# Optional '=' token (RELATIONAL_OPERATOR)
+			# '='
 			if i < len(children) and children[i].label == "RELATIONAL_OPERATOR":
 				i += 1
 			# Expression node
@@ -79,7 +79,7 @@ class ASTBuilder:
 			value_expr = None
 			if expr_node and expr_node.label == "<expression>":
 				try:
-					value_expr = self._build_expression(expr_node)  # type: ignore[arg-type]
+					value_expr = self._build_expression(expr_node)
 				except NotImplementedError:
 					value_expr = None
 				i += 1
@@ -113,7 +113,7 @@ class ASTBuilder:
 			built_type = None
 			if type_node and type_node.label == "<type>":
 				try:
-					built_type = self._build_type_expr(type_node)  # type: ignore[arg-type]
+					built_type = self._build_type_expr(type_node)
 				except NotImplementedError:
 					built_type = None
 				i += 1
@@ -213,12 +213,12 @@ class ASTBuilder:
 				after_colon = True
 			elif child.label == "<type>" and after_colon:
 				try:
-					ret_type = self._build_type_expr(child)  # type: ignore[arg-type]
+					ret_type = self._build_type_expr(child)
 				except NotImplementedError:
 					ret_type = None
 			elif child.label == "<block>":
 				try:
-					blk = self._build_block(child)  # type: ignore[arg-type]
+					blk = self._build_block(child)
 				except NotImplementedError:
 					blk = None
 		return FunctionDecl(name=name, params=params, return_type=ret_type, block=blk, token=ident_token)
