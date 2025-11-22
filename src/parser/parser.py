@@ -479,7 +479,7 @@ class Parser:
             if next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "ASSIGN_OPERATOR":
                 return self.parse_assignment_statement()
             else:
-                return self.parse_procedure_call()
+                return self.parse_procedure_function_call()
         self.error("statement", tok)
         return None
         
@@ -606,57 +606,34 @@ class Parser:
         
         return node
 
-    def parse_procedure_call(self):
-        # <procedure-call> ::= IDENTIFIER [ LPARENTHESIS <parameter-list> RPARENTHESIS ]
+    def parse_procedure_function_call(self):
+        # <procedure/function-call> ::= IDENTIFIER LPARENTHESIS [ <parameter-list> ] RPARENTHESIS
         node = Node("<procedure-function-call>")
-        
-        # IDENTIFIER
-        ident = self.match_token("IDENTIFIER")
-        if not ident: return None
-        node.add_children(Node("IDENTIFIER", ident))
-        
-        # [ ... ] 
+
         tok = self.peek()
-        if tok and tok.token_type == "LPARENTHESIS":
-            lparen = self.consume_token() 
-            node.add_children(Node("LPARENTHESIS", lparen))
-            
-            param_list_node = self.parse_parameter_list()
-            if param_list_node:
-                node.add_children(param_list_node)
-            
-            rparen = self.match_token("RPARENTHESIS", ")")
-            if not rparen: return None
-            node.add_children(Node("RPARENTHESIS", rparen))
-            
+        if not tok:
+            return None
+        if tok.token_type == "IDENTIFIER":
+            node.add_children(Node("IDENTIFIER", self.consume_token()))
+        else:
+            return None
+
+        lparen = self.match_token("LPARENTHESIS", "(")
+        if not lparen:
+            return None
+        node.add_children(Node("LPARENTHESIS", lparen))
+
+        param_list_node = self.parse_parameter_list()
+        if param_list_node:
+            node.add_children(param_list_node)
+
+        rparen = self.match_token("RPARENTHESIS", ")")
+        if not rparen:
+            return None
+        node.add_children(Node("RPARENTHESIS", rparen))
+
         return node
 
-    def parse_function_call(self):
-        # <function-call> ::= IDENTIFIER LPARENTHESIS [ <parameter-list> ] RPARENTHESIS
-        node = Node("<function-call>")
-        
-        # IDENTIFIER
-        ident = self.match_token("IDENTIFIER")
-        if not ident: return None
-        node.add_children(Node("IDENTIFIER", ident))
-        
-        # LPARENTHESIS
-        lparen = self.match_token("LPARENTHESIS", "(")
-        if not lparen: return None
-        node.add_children(Node("LPARENTHESIS", lparen))
-        
-        tok = self.peek()
-        if tok and tok.token_type != "RPARENTHESIS":
-            param_list_node = self.parse_parameter_list()
-            if param_list_node:
-                node.add_children(param_list_node)
-        
-        # RPARENTHESIS
-        rparen = self.match_token("RPARENTHESIS", ")")
-        if not rparen: return None
-        node.add_children(Node("RPARENTHESIS", rparen))
-        
-        return node
     
     def parse_parameter_list(self):
         # <parameter-list> ::= <expression> { COMMA <expression> }
@@ -833,7 +810,8 @@ class Parser:
             # liat token kedua untuk memutuskan ini function call atau IDENTIFIER biasa
             next_tok_index = self.current_index + 1
             if next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "LPARENTHESIS":
-                return self.parse_function_call()
+                # Unified procedure/function call node (Rev 2+3)
+                return self.parse_procedure_function_call()
             else:
                 node.add_children(Node("IDENTIFIER", self.consume_token()))
                 return node

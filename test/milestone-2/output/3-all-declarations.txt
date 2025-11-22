@@ -213,7 +213,7 @@ START PARSING...
     │   │   └── <expression>
     │   │       └── <simple-expression>
     │   │           └── <term>
-    │   │               └── <function-call>
+    │   │               └── <procedure-function-call>
     │   │                   ├── IDENTIFIER(TestFunc)
     │   │                   ├── LPARENTHESIS(()
     │   │                   ├── <parameter-list>

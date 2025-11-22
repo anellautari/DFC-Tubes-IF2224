@@ -4,11 +4,11 @@
 ### IF2224 - Teori Bahasa Formal dan Otomata
 
 <p>
-Implementasi Lexical Analyzer untuk subset bahasa PASCAL-S menggunakan Deterministic Finite Automaton (DFA). 
+Implementasi Syntax Analyzer untuk subset bahasa PASCAL-S menggunakan Recursive Descent Parsing dan konstruksi Parse Tree.
 </p>
 
 <p>
-  <img alt="Project Status" src="https://img.shields.io/badge/status-milestone_1-blue.svg">
+  <img alt="Project Status" src="https://img.shields.io/badge/status-milestone_2-blue.svg">
 </p>
 
 </div>
@@ -30,9 +30,13 @@ Implementasi Lexical Analyzer untuk subset bahasa PASCAL-S menggunakan Determini
 
 ## Tentang Proyek
 
-Proyek ini adalah implementasi dari **Milestone 1: Lexical Analyzer (Lexer)** untuk *compiler* PASCAL-S. Lexer ini dirancang untuk memindai file kode sumber `.pas` dan mengubahnya menjadi serangkaian token yang terdefinisi.
+Proyek ini adalah implementasi dari **Milestone 2: Syntax Analyzer (Parser)** untuk compiler PASCAL-S. Pada tahap ini, parser bertugas membaca deretan token yang dihasilkan oleh lexer (Milestone 1) dan membangun parse tree berdasarkan aturan grammar PASCAL-S.
 
-Inti dari *lexer* ini adalah mesin **Deterministic Finite Automaton (DFA)** yang aturannya didefinisikan secara eksternal dalam file `src/dfa_rules.json`. Pendekatan ini membuat *lexer* menjadi modular dan mudah untuk dikonfigurasi. Program membaca file sumber, memprosesnya karakter per karakter berdasarkan aturan transisi DFA, dan mencetak daftar token yang berhasil dikenali ke konsol.
+Parser yang digunakan adalah **Recursive Descent Parser**, yaitu parser top-down yang secara langsung menerjemahkan setiap aturan grammar ke dalam fungsi-fungsi spesifik. Struktur dan alur parsing diimplementasikan secara modular di dalam file ```src/parser/parser.py```, sementara struktur node parse tree didefinisikan di ```src/common/node.py```.
+
+Parser membaca token satu per satu menggunakan fungsi utilitas seperti ```peek()```, ```consume_token()```, dan ```match_token()``` yang mengatur aliran token dan memastikan kesesuaian dengan grammar. Jika ditemukan token yang tidak valid, parser akan menghasilkan pesan error yang informatif melalui mekanisme error handling.
+
+Output dari Milestone 2 berupa parse tree yang dicetak dalam format indentasi, yang merepresentasikan struktur sintaks dari program PASCAL-S yang dibaca.
 
 ### Teknologi
 
@@ -55,22 +59,26 @@ cd DFC-Tubes-IF2224
 ```
 ## Cara Penggunaan
 
-Untuk hanya menjalankan program, gunakan perintah berikut:
+Gunakan perintah `python -m src.main` (atau `python3` tergantung sistem Anda) dari direktori root proyek:
 ```bash
-python src/main.py [path_ke_file_pascal]
+python -m src.main [path_ke_file_pascal]
 ```
 Contoh:
 ```bash
-python src/main.py test/milestone-2/input/1-basic.pas
+python -m src.main test/milestone-2/input/1-basic.pas
 ```
 
-Untuk menyimpan hasil tokenisasi ke dalam file '.txt', gunakan perintah berikut:
+Untuk menyimpan hasil tokenisasi ke dalam file '.txt', karena Parse Tree menggunakan karakter Unicode (`└──`, `│`), menyimpan output di Windows CMD/PowerShell standar dapat menyebabkan error atau karakter aneh.
+
+Direkomendasikan menjalankan program melalui **WSL (Windows Subsystem for Linux)**, yang sepenuhnya mendukung UTF-8.
+
+Gunakan perintah &> di terminal WSL untuk menyimpan output dan error ke file .txt:
 ```bash
-python src/main.py [path_ke_file_pascal] > [path_ke_file_output]
+python3 -m src.main.py [path_ke_file_pascal] &> [path_ke_file_output]
 ```
 Contoh:
 ```bash
-python src/main.py test/milestone-2/input/1-basic.pas > test/milestone-2/output/1-basic.txt
+python3 -m src.main test/milestone-2/input/1-basic.pas &> test/milestone-2/output/1-basic.txt
 ```
 
 ## Struktur Proyek
@@ -115,11 +123,11 @@ DFC-Tubes-IF2224/
 ## Kontributor
 <div align="center">
   
-| Nama | NIM | Tugas |
-| :--- | :---: | :---: |
-| Mayla Yaffa Ludmilla | 13523050 | • Desain dan pembuatan Diagram Transisi DFA <br> • Penyusunan dan finalisasi Laporan |
-| Anella Utari Gunadi | 13523078 | • Implementasi simulator DFA dan input <br> • Inisiasi dan penyusunan awal Laporan |
-| Muhammad Edo Raduputu Aprima | 13523096 | • Inisiasi repository dan struktur proyek <br>• Pengujian program dan pembuatan README.md|
-| Athian Nugraha Muarajuang | 13523106 | • Implementasi Aturan DFA (dfa_rules.json) <br>• Implementasi logika inti Lexer dan output |
+| Nama | NIM | Tugas | Persentase (%) |
+| :--- | :---: | :---: | :---: |
+| Mayla Yaffa Ludmilla | 13523050 | • Implementasi statement & grammar utama parser <br> • Laporan dasar teori & implementasi | 25 |
+| Anella Utari Gunadi | 13523078 | • Implementasi declaration & subprogram parser <br> • Laporan implementasi & deskripsi tugas | 25 |
+| Muhammad Edo Raduputu Aprima | 13523096 | • Definisi aturan grammar, implementasi assignment statement, procedure function, dan expression <br>• Pengujian program & laporan testing | 25 |
+| Athian Nugraha Muarajuang | 13523106 | • Implementasi error handling, parse term, factor, serta operators <br>• Laporan kesimpulan dan saran | 25 |
 
 </div>
