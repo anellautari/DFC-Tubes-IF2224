@@ -118,6 +118,14 @@ class Parser:
         """
         node = Node("<declaration-part>")
 
+        # state machine:
+        # 0 = konstanta
+        # 1 = tipe
+        # 2 = variabel
+        # 3 = subprogram
+
+        state = 0
+
         while True:
             tok = self.peek()
             if not tok or tok.token_type != "KEYWORD":
@@ -125,28 +133,35 @@ class Parser:
 
             kw = tok.value.lower()
 
-            if kw == "konstanta":
+            if state == 0 and kw == "konstanta":
                 const_node = self.parse_const_declaration()
                 if const_node:
                     node.add_children(const_node)
                 continue
 
             if kw == "tipe":
+                if state > 1:
+                    self.error("Type declarations must appear before variable and subprogram declarations.", tok)
+                state = 1
                 type_decl = self.parse_type_declaration()
                 if type_decl:
                     node.add_children(type_decl)
                 continue
 
             if kw == "variabel":
+                if state > 2:
+                    self.error("Variable declarations must appear before subprogram declarations.", tok)
+                state = 2
                 var_decl = self.parse_var_declaration()
                 if var_decl:
                     node.add_children(var_decl)
                 continue
 
             if kw in ("prosedur", "fungsi"):
-                subprog = self.parse_subprogram_declaration()
-                if subprog:
-                    node.add_children(subprog)
+                state = 3
+                sub_node = self.parse_subprogram_declaration()
+                if sub_node:
+                    node.add_children(sub_node)
                 continue
 
             break
