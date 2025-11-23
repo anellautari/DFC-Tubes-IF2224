@@ -1,5 +1,6 @@
 from src.semantic.ast import *
 from src.semantic.symbol_table import SymbolTables
+from src.common.errors import SemanticError
 
 
 class SemanticAnalyzer:
@@ -120,10 +121,76 @@ class SemanticAnalyzer:
             self.visit(stmt)
 
     def visit_AssignStmt(self, node: AssignStmt):
-        if node.target:
-            self.visit(node.target)
-        if node.value:
-            self.visit(node.value)
+        var_name = node.target.name
+        var_idx = self.symtab.lookup(var_name)
+        
+        if var_idx is None:
+            raise SemanticError(f"Variable '{var_name}' not declared.", node.token)
+            
+        var_entry = self.symtab.tab[var_idx]
+        
+        if var_entry.obj != "variable" and var_entry.obj != "function":
+             raise SemanticError(f"Cannot assign to '{var_name}' because it is a {var_entry.obj}.", node.token)
+
+        expr_type = self.visit(node.value)
+        
+        if expr_type and var_entry.typ != expr_type:
+           raise SemanticError(f"Type mismatch in assignment. Cannot assign {expr_type} to variable '{var_name}' of type {var_entry.typ}.", node.token)
+
+    def visit_IfStmt(self, node: IfStmt):
+        condition_type = self.visit(node.condition)
+        if condition_type is not None and condition_type != "bools":
+            raise SemanticError("If condition must be of boolean expression.", node.token)
+            
+        self.visit(node.then_branch)
+        if node.else_branch:
+            self.visit(node.else_branch)
+
+    def visit_WhileStmt(self, node: WhileStmt):
+        condition_type = self.visit(node.condition)
+        if condition_type is not None and condition_type != "bools":
+            raise SemanticError("While condition must be of boolean expression.", node.token)
+        
+        self.visit(node.body)
+
+    def visit_ForStmt(self, node: ForStmt):
+        var_name = node.var.name
+        var_idx = self.symtab.lookup(var_name)
+        
+        if var_idx is None:
+            raise SemanticError(f"Loop variable '{var_name}' not declared.", node.token)
+            
+        var_entry = self.symtab.tab[var_idx]
+        if var_entry.typ != "ints":
+            raise SemanticError(f"For loop variable '{var_name}' must be of type integer.", node.token)
+        
+        start_type = self.visit(node.start)
+        end_type = self.visit(node.end)
+		
+		# Start dan End harus Integer
+        if start_type is not None and start_type != "ints":
+            raise SemanticError("For loop start expression must be Integer.", node.token)
+			
+        if end_type is not None and end_type != "ints":
+            raise SemanticError("For loop end expression must be Integer.", node.token)
+			
+        self.visit(node.body)
+
+    def visit_ProcCallStmt(self, node: ProcCallStmt):
+        proc_name = node.name
+        proc_idx = self.symtab.lookup(proc_name)
+        
+        if proc_idx is None:
+            raise SemanticError(f"Procedure '{proc_name}' not declared.", node.token)
+            
+        proc_entry = self.symtab.tab[proc_idx]
+        
+        if proc_entry.obj != "procedure":
+            raise SemanticError(f"'{proc_name}' is not a procedure.", node.token)
+            
+        # Validasi Argumen
+        for arg in node.args:
+            self.visit(arg)
 
     # =============== EXPRESSIONS ===============
     def visit_NumberLiteral(self, node: NumberLiteral):

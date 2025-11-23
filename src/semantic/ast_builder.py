@@ -21,6 +21,9 @@ from src.semantic.ast import (
 	TypeDecl,
 	TypeExpr,
 	VarDecl,
+	WhileStmt,
+	VarRef,
+	ForDirection,
 )
 
 
@@ -239,22 +242,149 @@ class ASTBuilder:
 		raise NotImplementedError
 
 	def _build_statement(self, node: Node) -> Statement:
-		raise NotImplementedError
+		"""Dispatch to specific statement builders based on the node label.
+  
+		Handles:
+		- Compound statements
+		- Assignment statements
+		- Procedure/function call statements
+		- If statements
+		- While statements
+		- For statements
+  		"""
+		if node.label == "<assignment-statement>":
+			return self._build_assign_statement(node)
+			
+		elif node.label == "<procedure-function-call>": # Sesuaikan label dari parser M2
+			return self._build_proc_call_stmt(node)
+			
+		elif node.label == "<if-statement>":
+			return self._build_if_statement(node)
+			
+		elif node.label == "<while-statement>":
+			return self._build_while_statement(node)
+			
+		elif node.label == "<for-statement>":
+			return self._build_for_statement(node)
+			
+		elif node.label == "<compound-statement>":
+			return self._build_compound_statement(node)
+
+		if node.children:
+			first_child = node.children[0] 
+			if first_child.label == "KEYWORD" and first_child.token:
+				kw = first_child.token.value.lower()
+				match kw:
+					case "mulai":
+						return self._build_compound_statement(node)
+					case "jika":
+						return self._build_if_statement(node)
+					case "selama":
+						return self._build_while_statement(node)
+					case "untuk":
+						return self._build_for_statement(node)
+
+			elif first_child.label == "<assignment-statement>":
+				return self._build_assign_statement(first_child)
+
+			elif first_child.label == "<procedure-function-call>":
+				return self._build_proc_call_stmt(first_child)
+
+		raise NotImplementedError(f"Unknown statement type: {first_child.label}")
+
 
 	def _build_compound_statement(self, node: Node) -> CompoundStmt:
-		raise NotImplementedError
+		"""Build a CompoundStmt from <compound-statement> node.
+		
+  		Structure:
+		  KEYWORD('mulai') <statement-list> KEYWORD('selesai')
+		"""
+		stmts: list[Statement] = []
+		for child in node.children:
+			if child.label in ["KEYWORD", "SEMICOLON"]:
+				continue	
+			stmts.append(self._build_statement(child))
+			
+		return CompoundStmt(statements=stmts, token=node.children[0].token)
 
 	def _build_assign_statement(self, node: Node) -> AssignStmt:
-		raise NotImplementedError
+		"""Build an AssignStmt from <assignment-statement> node.
+  
+		Structure:
+		  IDENTIFIER ASSIGN_OPERATOR(:=) <expression>
+  		"""
+		target_token = node.children[0].token
+		target_ref = VarRef(name=target_token.value, token=target_token)
+		assign_token = node.children[1].token
+		expr_node = node.children[2]
+		value_expr = self._build_expression(expr_node)
+		
+		return AssignStmt(target=target_ref, value=value_expr, token=assign_token)
 
 	def _build_proc_call_stmt(self, node: Node) -> ProcCallStmt:
-		raise NotImplementedError
+		"""Build a ProcCallStmt from <procedure-function-call> node.
+
+		Structure:
+		  IDENTIFIER [ LPAREN <parameter-list> RPAREN ]
+		"""
+		ident_token = node.children[0].token
+		name = ident_token.value
+		args = []
+		if len(node.children) > 1 and node.children[1].label == "LPARENTHESIS":
+			param_list_node = node.children[2]
+			for child in param_list_node.children:
+				if child.label == "<expression>":
+					args.append(self._build_expression(child))
+					
+		return ProcCallStmt(name=name, args=args, token=ident_token)
 
 	def _build_if_statement(self, node: Node) -> IfStmt:
-		raise NotImplementedError
+		"""Build an IfStmt from <if-statement> node.
+  
+		Structure:
+		  KEYWORD(jika) <expression> KEYWORD(maka) <statement> [KEYWORD(selain_itu) <statement>]
+  		"""
+		if_token = node.children[0].token
+		condition = self._build_expression(node.children[1])
+		then_branch = self._build_statement(node.children[3])
+		else_branch = None
+		if len(node.children) > 4:
+			else_branch = self._build_statement(node.children[5])
+			
+		return IfStmt(condition=condition, then_branch=then_branch, else_branch=else_branch, token=if_token)
 
 	def _build_for_statement(self, node: Node) -> ForStmt:
-		raise NotImplementedError
+		"""Build a ForStmt from <for-statement> node.
+
+		Structure:
+		  KEYWORD(untuk) IDENTIFIER ASSIGN_OPERATOR <expression> (ke/turun_ke) <expression> KEYWORD(lakukan) <statement>
+  		"""
+		for_token = node.children[0].token
+		var_token = node.children[1].token
+		var_ref = VarRef(name=var_token.value, token=var_token)
+		start_expr = self._build_expression(node.children[3])
+		dir_node = node.children[4]
+		direction = ForDirection.TO
+		if dir_node.token.value == "turun_ke":
+			direction = ForDirection.DOWNTO
+			
+		end_expr = self._build_expression(node.children[5])
+		body = self._build_statement(node.children[7])
+		
+		return ForStmt(var=var_ref, start=start_expr, end=end_expr, direction=direction, body=body, token=for_token)
+
+	def _build_while_statement(self, node: Node) -> WhileStmt:
+		"""Build a WhileStmt from <while-statement> node.
+  
+		Structure: 
+		  KEYWORD(selama) <expression> KEYWORD(lakukan) <statement>
+		"""
+		while_token = node.children[0].token
+		condition = self._build_expression(node.children[1])
+		body = self._build_statement(node.children[3])
+		
+		return WhileStmt(condition=condition, body=body, token=while_token)
+  
 
 	def _build_expression(self, node: Node) -> Expression:
 		raise NotImplementedError
