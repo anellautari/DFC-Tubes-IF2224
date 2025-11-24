@@ -1,21 +1,6 @@
 from src.semantic.ast import *
-from src.semantic.symbol_table import SymbolTables
+from src.semantic.symbol_table import SymbolTables, TypeKind
 from src.common.errors import SemanticError
-from src.semantic.types import (
-    TYPE_ARRAY,
-    TYPE_BOOLEAN,
-    TYPE_INTEGER,
-    TYPE_REAL,
-    TYPE_CHAR,
-    TYPE_VOID,
-    TYPE_UNKNOWN,
-    TYPE_CUSTOM,
-    TYPE_NAMES,
-    TYPE_STRING,
-    types_compatible,
-    result_type,
-    get_type_code
-)
 
 class SemanticAnalyzer:
     def __init__(self):
@@ -151,35 +136,35 @@ class SemanticAnalyzer:
         op = node.op
         
         if op in ['+', '-', '*', '/'] :
-            is_real_op = (left_type == TYPE_REAL or right_type == TYPE_REAL or op == '/')
+            is_real_op = (left_type == TypeKind.REALS or right_type == TypeKind.REALS or op == '/')
             
-            if left_type not in (TYPE_INTEGER, TYPE_REAL) or right_type not in (TYPE_INTEGER, TYPE_REAL):
+            if left_type not in (TypeKind.INTS, TypeKind.REALS) or right_type not in (TypeKind.INTS, TypeKind.REALS):
                 raise SemanticError(f"Operator '{op}' memerlukan operand numerik")
             
-            result = TYPE_REAL if is_real_op else TYPE_INTEGER
-            node.type_code = result
+            result = TypeKind.REALS if is_real_op else TypeKind.INTS
+            node.type = result
             return result
             
         elif op in ['bagi', 'mod']:
-            if left_type != TYPE_INTEGER or right_type != TYPE_INTEGER:
+            if left_type != TypeKind.INTS or right_type != TypeKind.INTS:
                 raise SemanticError(f"Operator '{op}' hanya berlaku untuk Integer")
-            node.type_code = TYPE_INTEGER
-            return TYPE_INTEGER
+            node.type = TypeKind.INTS
+            return TypeKind.INTS
         
         elif op in ['dan', 'atau'] :
-            if left_type != TYPE_BOOLEAN or right_type != TYPE_BOOLEAN:
+            if left_type != TypeKind.BOOLS or right_type != TypeKind.BOOLS:
                 raise SemanticError(f"Operator '{op}' memerlukan operand Boolean")
-            node.type_code = TYPE_BOOLEAN
-            return TYPE_BOOLEAN
+            node.type = TypeKind.BOOLS
+            return TypeKind.BOOLS
         
         elif op in ['=', '<', '>', '<=', '>=', '<>', '!='] :
             if left_type != right_type:
-                if {left_type, right_type} == {TYPE_INTEGER, TYPE_REAL}:
+                if {left_type, right_type} == {TypeKind.INTS, TypeKind.REALS}:
                     pass
                 else:
                     raise SemanticError(f"Tipe operand tidak cocok untuk perbandingan '{op}'")
-            node.type_code = TYPE_BOOLEAN
-            return TYPE_BOOLEAN
+            node.type = TypeKind.BOOLS
+            return TypeKind.BOOLS
         
         
     def visit_UnaryOp(self, node: UnaryOp):
@@ -188,11 +173,11 @@ class SemanticAnalyzer:
         op = node.op
         
         if op == 'tidak':
-            if operand_type != TYPE_BOOLEAN:
+            if operand_type != TypeKind.BOOLS:
                 raise SemanticError("Operator NOT butuh operand Boolean")
-            return TYPE_BOOLEAN
+            return TypeKind.BOOLS
         elif op == '-':
-            if operand_type not in (TYPE_INTEGER, TYPE_REAL):
+            if operand_type not in (TypeKind.INTS, TypeKind.REALS):
                 raise SemanticError("Unary Minus butuh operand numerik")
             return operand_type
         
@@ -216,23 +201,23 @@ class SemanticAnalyzer:
     def visit_NumberLiteral(self, node: NumberLiteral):
         node.is_constant = True
         if '.' in node.value:
-            node.type_code = get_type_code("TYPE_REAL")
-            return TYPE_REAL
+            node.type = TypeKind.REALS
+            return TypeKind.REALS
         else:
-            node.type_code = get_type_code("TYPE_INTEGER")
-            return TYPE_INTEGER
+            node.type = TypeKind.INTS
+            return TypeKind.INTS
 
     def visit_StringLiteral(self, node: StringLiteral):
         node.is_constant = True
-        node.type_code = get_type_code("TYPE_STRING")
-        return TYPE_STRING
+        node.type = TypeKind.STRING
+        return TypeKind.STRING
 
     def visit_CharLiteral(self, node: CharLiteral):
         node.is_constant = True
-        node.type_code = get_type_code("TYPE_CHAR")
-        return TYPE_CHAR
+        node.type = TypeKind.CHAR
+        return TypeKind.CHAR
 
     def visit_BooleanLiteral(self, node: BooleanLiteral):
         node.is_constant = True
-        node.type_code = get_type_code("TYPE_BOOLEAN")
-        return TYPE_BOOLEAN
+        node.type = TypeKind.REALS
+        return TypeKind.BOOLS

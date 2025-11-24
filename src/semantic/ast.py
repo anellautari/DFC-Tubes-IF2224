@@ -22,7 +22,7 @@ class Statement(ASTNode):
 
 class Expression(ASTNode):
 	"""Marker base class for expression nodes."""
-	type_code: int | None = None
+	type:  None = None
 	is_constant: bool = False
 
 
