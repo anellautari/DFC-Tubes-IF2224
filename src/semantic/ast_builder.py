@@ -3,6 +3,7 @@ from typing import List
 
 from src.common import node
 from src.common.node import Node
+from src.common.pascal_token import Token
 from src.semantic.ast import (
 	ArrayType,
 	AssignStmt,
@@ -32,6 +33,8 @@ from src.semantic.ast import (
 	StringLiteral,
 	CharLiteral,
 	BooleanLiteral,
+	PrimitiveType,
+	NamedType,
 )
 
 
@@ -40,13 +43,32 @@ class ASTBuilder:
 
 	def build(self, root: Node) -> Program:
 		"""Build a Program AST node from the parser root."""
-		raise NotImplementedError
+		if root.label != "<program>":
+			raise ValueError("Root node must be <program> to build AST")
+		return self._build_program(root)
 
 	def _build_program(self, node: Node) -> Program:
-		raise NotImplementedError
+		program_name = ""
+		program_token = None
+		for child in node.children:
+			if child.label == "<program-header>":
+				for header_child in child.children:
+					if header_child.label == "IDENTIFIER" and header_child.token:
+						program_name = header_child.token.value
+						program_token = header_child.token
+						break
+				break
+		block = self._build_block(node)
+		return Program(name=program_name, block=block, token=program_token)
 
 	def _build_block(self, node: Node) -> Block:
-		raise NotImplementedError
+		block = Block(token=node.token)
+		for child in node.children:
+			if child.label == "<declaration-part>":
+				self._build_declaration_part(child, block)
+			elif child.label == "<compound-statement>":
+				block.body = self._build_compound_statement(child)
+		return block
 
 	def _build_declaration_part(self, node: Node, block: Block) -> None:
 		"""Populate a Block with declarations found under <declaration-part>."""
@@ -235,19 +257,55 @@ class ASTBuilder:
 		return FunctionDecl(name=name, params=params, return_type=ret_type, block=blk, token=ident_token)
 
 	def _build_formal_parameter_list(self, node: Node) -> list[Param]:
-		raise NotImplementedError
+		params: list[Param] = []
+		for child in node.children:
+			if child.label == "<parameter-group>":
+				params.extend(self._build_parameter_group(child))
+		return params
 
 	def _build_parameter_group(self, node: Node) -> list[Param]:
-		raise NotImplementedError
+		ident_tokens: list[Token] = []
+		type_expr: TypeExpr | None = None
+		for child in node.children:
+			if child.label == "<identifier-list>":
+				for ident_child in child.children:
+					if ident_child.label == "IDENTIFIER" and ident_child.token:
+						ident_tokens.append(ident_child.token)
+			elif child.label == "<type>":
+				type_expr = self._build_type_expr(child)
+		params = [Param(name=tok.value, type_expr=type_expr, token=tok) for tok in ident_tokens]
+		return params
 
 	def _build_type_expr(self, node: Node) -> TypeExpr:
-		raise NotImplementedError
+		for child in node.children:
+			if child.label == "KEYWORD" and child.token:
+				return PrimitiveType(name=child.token.value.lower(), token=child.token)
+			if child.label == "IDENTIFIER" and child.token:
+				return NamedType(name=child.token.value, token=child.token)
+			if child.label == "<array-type>":
+				return self._build_array_type(child)
+		raise NotImplementedError("Unsupported <type> node structure")
 
 	def _build_array_type(self, node: Node) -> ArrayType:
-		raise NotImplementedError
+		range_expr = None
+		element_type = None
+		for child in node.children:
+			if child.label == "<range>":
+				range_expr = self._build_range_expr(child)
+			elif child.label == "<type>":
+				element_type = self._build_type_expr(child)
+		return ArrayType(index_range=range_expr, element_type=element_type, token=node.children[0].token if node.children else None)
 
 	def _build_range_expr(self, node: Node) -> RangeExpr:
-		raise NotImplementedError
+		lower = None
+		upper = None
+		for child in node.children:
+			if child.label == "<expression>":
+				if lower is None:
+					lower = self._build_expression(child)
+				else:
+					upper = self._build_expression(child)
+		return RangeExpr(lower=lower, upper=upper, token=node.token)
 
 	def _build_statement(self, node: Node) -> Statement:
 		"""Dispatch to specific statement builders based on the node label.
@@ -260,6 +318,9 @@ class ASTBuilder:
 		- While statements
 		- For statements
   		"""
+		if not node.children:
+			raise NotImplementedError("Empty statement node")
+
 		if node.label == "<assignment-statement>":
 			return self._build_assign_statement(node)
 			
@@ -278,8 +339,8 @@ class ASTBuilder:
 		elif node.label == "<compound-statement>":
 			return self._build_compound_statement(node)
 
+		first_child = node.children[0]
 		if node.children:
-			first_child = node.children[0] 
 			if first_child.label == "KEYWORD" and first_child.token:
 				kw = first_child.token.value.lower()
 				match kw:
@@ -321,6 +382,8 @@ class ASTBuilder:
 		Structure:
 		  IDENTIFIER ASSIGN_OPERATOR(:=) <expression>
   		"""
+		if len(node.children) < 3 or node.children[0].token is None:
+			raise NotImplementedError("Malformed assignment node")
 		target_token = node.children[0].token
 		target_ref = VarRef(name=target_token.value, token=target_token)
 		assign_token = node.children[1].token
@@ -335,6 +398,8 @@ class ASTBuilder:
 		Structure:
 		  IDENTIFIER [ LPAREN <parameter-list> RPAREN ]
 		"""
+		if not node.children or node.children[0].token is None:
+			raise NotImplementedError("Procedure call missing identifier")
 		ident_token = node.children[0].token
 		name = ident_token.value
 		args = []
@@ -367,13 +432,17 @@ class ASTBuilder:
 		Structure:
 		  KEYWORD(untuk) IDENTIFIER ASSIGN_OPERATOR <expression> (ke/turun_ke) <expression> KEYWORD(lakukan) <statement>
   		"""
+		if len(node.children) < 8:
+			raise NotImplementedError("Malformed for-statement node")
+		if node.children[0].token is None or node.children[1].token is None:
+			raise NotImplementedError("For-statement missing tokens")
 		for_token = node.children[0].token
 		var_token = node.children[1].token
 		var_ref = VarRef(name=var_token.value, token=var_token)
 		start_expr = self._build_expression(node.children[3])
 		dir_node = node.children[4]
 		direction = ForDirection.TO
-		if dir_node.token.value == "turun_ke":
+		if dir_node.token and dir_node.token.value == "turun_ke":
 			direction = ForDirection.DOWNTO
 			
 		end_expr = self._build_expression(node.children[5])
