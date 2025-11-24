@@ -1,3 +1,4 @@
+ 
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional
@@ -21,6 +22,7 @@ class TypeKind(str, Enum):
     CHARS = "chars"
     ARRAYS = "arrays"
     RECORDS = "records"
+    STRINGS = "strings"
 
 
 # ============= TAB (identifier table) =============

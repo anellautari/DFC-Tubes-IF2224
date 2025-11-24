@@ -1,7 +1,6 @@
 from src.semantic.ast import *
-from src.semantic.symbol_table import SymbolTables
+from src.semantic.symbol_table import SymbolTables, TypeKind
 from src.common.errors import SemanticError
-
 
 class SemanticAnalyzer:
     def __init__(self):
@@ -139,7 +138,7 @@ class SemanticAnalyzer:
 
     def visit_IfStmt(self, node: IfStmt):
         condition_type = self.visit(node.condition)
-        if condition_type is not None and condition_type != "bools":
+        if condition_type is not None and condition_type != TypeKind.BOOLS:
             raise SemanticError("If condition must be of boolean expression.", node.token)
             
         self.visit(node.then_branch)
@@ -148,7 +147,7 @@ class SemanticAnalyzer:
 
     def visit_WhileStmt(self, node: WhileStmt):
         condition_type = self.visit(node.condition)
-        if condition_type is not None and condition_type != "bools":
+        if condition_type is not None and condition_type != TypeKind.BOOLS:
             raise SemanticError("While condition must be of boolean expression.", node.token)
         
         self.visit(node.body)
@@ -161,17 +160,17 @@ class SemanticAnalyzer:
             raise SemanticError(f"Loop variable '{var_name}' not declared.", node.token)
             
         var_entry = self.symtab.tab[var_idx]
-        if var_entry.typ != "ints":
+        if var_entry.typ != TypeKind.INTS:
             raise SemanticError(f"For loop variable '{var_name}' must be of type integer.", node.token)
         
         start_type = self.visit(node.start)
         end_type = self.visit(node.end)
 		
 		# Start dan End harus Integer
-        if start_type is not None and start_type != "ints":
+        if start_type is not None and start_type != TypeKind.INTS:
             raise SemanticError("For loop start expression must be Integer.", node.token)
 			
-        if end_type is not None and end_type != "ints":
+        if end_type is not None and end_type != TypeKind.INTS:
             raise SemanticError("For loop end expression must be Integer.", node.token)
 			
         self.visit(node.body)
@@ -193,8 +192,98 @@ class SemanticAnalyzer:
             self.visit(arg)
 
     # =============== EXPRESSIONS ===============
-    def visit_NumberLiteral(self, node: NumberLiteral):
-        return node.value
+    def visit_BinOp(self, node: BinOp):
+        if node.left:
+           left_type = self.visit(node.left)
+        
+        if node.right:
+            right_type = self.visit(node.right)
+        
+        op = node.op
+        
+        if op in ['+', '-', '*', '/'] :
+            is_real_op = (left_type == TypeKind.REALS or right_type == TypeKind.REALS or op == '/')
+            
+            if left_type not in (TypeKind.INTS, TypeKind.REALS) or right_type not in (TypeKind.INTS, TypeKind.REALS):
+                raise SemanticError(f"Operator '{op}' memerlukan operand numerik")
+            
+            result = TypeKind.REALS if is_real_op else TypeKind.INTS
+            node.type = result
+            return result
+            
+        elif op in ['bagi', 'mod']:
+            if left_type != TypeKind.INTS or right_type != TypeKind.INTS:
+                raise SemanticError(f"Operator '{op}' hanya berlaku untuk Integer")
+            node.type = TypeKind.INTS
+            return TypeKind.INTS
+        
+        elif op in ['dan', 'atau'] :
+            if left_type != TypeKind.BOOLS or right_type != TypeKind.BOOLS:
+                raise SemanticError(f"Operator '{op}' memerlukan operand Boolean")
+            node.type = TypeKind.BOOLS
+            return TypeKind.BOOLS
+        
+        elif op in ['=', '<', '>', '<=', '>=', '<>', '!='] :
+            if left_type != right_type:
+                if {left_type, right_type} == {TypeKind.INTS, TypeKind.REALS}:
+                    pass
+                else:
+                    raise SemanticError(f"Tipe operand tidak cocok untuk perbandingan '{op}'")
+            node.type = TypeKind.BOOLS
+            return TypeKind.BOOLS
+        
+        
+    def visit_UnaryOp(self, node: UnaryOp):
+        if node.operand:
+            operand_type = self.visit(node.operand)
+        op = node.op
+        
+        if op == 'tidak':
+            if operand_type != TypeKind.BOOLS:
+                raise SemanticError("Operator NOT butuh operand Boolean")
+            return TypeKind.BOOLS
+        elif op == '-':
+            if operand_type not in (TypeKind.INTS, TypeKind.REALS):
+                raise SemanticError("Unary Minus butuh operand numerik")
+            return operand_type
+        
+        return operand_type
 
+    def visit_CallExpr(self, node: CallExpr):
+        entry = self.symtab.lookup(node.name)
+        if entry:
+            for arg in node.args:
+                self.visit(arg)
+        
     def visit_VarRef(self, node: VarRef):
+        entry = self.symtab.lookup(node.name)
+        if entry:
+            if entry['kind'] == 'constant':
+                return entry.get('adr')
+        
         return None
+
+    # =============== LITERALS ===============
+    def visit_NumberLiteral(self, node: NumberLiteral):
+        node.is_constant = True
+        if '.' in node.value:
+            node.type = TypeKind.REALS
+            return TypeKind.REALS
+        else:
+            node.type = TypeKind.INTS
+            return TypeKind.INTS
+
+    def visit_StringLiteral(self, node: StringLiteral):
+        node.is_constant = True
+        node.type = TypeKind.STRING
+        return TypeKind.STRING
+
+    def visit_CharLiteral(self, node: CharLiteral):
+        node.is_constant = True
+        node.type = TypeKind.CHARS
+        return TypeKind.CHARS
+
+    def visit_BooleanLiteral(self, node: BooleanLiteral):
+        node.is_constant = True
+        node.type = TypeKind.BOOLS
+        return TypeKind.BOOLS
