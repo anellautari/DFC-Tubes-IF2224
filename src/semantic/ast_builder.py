@@ -1,5 +1,7 @@
 from __future__ import annotations
+from typing import List
 
+from src.common import node
 from src.common.node import Node
 from src.semantic.ast import (
 	ArrayType,
@@ -21,6 +23,13 @@ from src.semantic.ast import (
 	TypeDecl,
 	TypeExpr,
 	VarDecl,
+ 	VarRef,
+    BinOp,
+    UnaryOp,
+    NumberLiteral,
+    StringLiteral,
+    CharLiteral,
+    BooleanLiteral,
 )
 
 
@@ -257,19 +266,185 @@ class ASTBuilder:
 		raise NotImplementedError
 
 	def _build_expression(self, node: Node) -> Expression:
-		raise NotImplementedError
+		"""
+		expression -> <simple-expression> [ <relational-operator> <simple-expression> ]
+		"""
+		children = node.children
+		
+		if not children or children[0].label != "<simple-expression>":
+			raise NotImplementedError("expression without simple-expression")
+		
+		left = self._build_simple_expression(children[0])
+		
+		if len(children) >= 3 and children[1].label == "<relational-operator>":
+			op_node = children[1]
+			if op_node.children and op_node.children[0].token:
+				op = op_node.children[0].token.value
+			else:
+				op = "="
+			
+			right = self._build_simple_expression(children[2])
+			return BinOp(op=op, left=left, right=right, token=node.token)
+		
+		return left
 
 	def _build_simple_expression(self, node: Node) -> Expression:
-		raise NotImplementedError
+		"""
+		simple-expression -> [ SIGN ] <term> { <additive-operator> <term> }
+		"""
+		children = node.children
+		i = 0
+		
+		unary_sign = None
+		if children and children[0].label == "SIGN":
+			if children[0].token:
+				unary_sign = children[0].token.value
+			i += 1
+		
+		if i >= len(children) or children[i].label != "<term>":
+			raise NotImplementedError("simple-expression without term")
+		
+		left = self._build_term(children[i])
+		
+		if unary_sign:
+			left = UnaryOp(op=unary_sign, operand=left, token=children[0].token)
+		
+		i += 1
+		
+		while i < len(children):
+			if children[i].label != "<additive-operator>":
+				break
+			
+			op_node = children[i]
+			if op_node.children and op_node.children[0].token:
+				op = op_node.children[0].token.value
+			else:
+				op = "+"
+			
+			i += 1
+			
+			if i >= len(children) or children[i].label != "<term>":
+				break
+			
+			right = self._build_term(children[i])
+			left = BinOp(op=op, left=left, right=right, token=op_node.token)
+			i += 1
+		
+		return left
 
 	def _build_term(self, node: Node) -> Expression:
-		raise NotImplementedError
+		"""
+		term -> <factor> { <multiplicative-operator> <factor> }
+		"""
+		children = node.children
+		
+		if not children or children[0].label != "<factor>":
+			raise NotImplementedError("term without factor")
+		
+		left = self._build_factor(children[0])
+		i = 1
+		
+		while i < len(children):
+			if children[i].label != "<multiplicative-operator>":
+				break
+			
+			op_node = children[i]
+			if op_node.children and op_node.children[0].token:
+				op = op_node.children[0].token.value
+			else:
+				op = "*"
+			
+			i += 1
+			
+			if i >= len(children) or children[i].label != "<factor>":
+				break
+			
+			right = self._build_factor(children[i])
+			left = BinOp(op=op, left=left, right=right, token=op_node.token)
+			i += 1
+		
+		return left
 
 	def _build_factor(self, node: Node) -> Expression:
-		raise NotImplementedError
+		"""
+		factor -> IDENTIFIER
+		        | <procedure-function-call>
+		        | NUMBER
+		        | CHAR_LITERAL
+		        | STRING_LITERAL
+		        | LPARENTHESIS <expression> RPARENTHESIS
+		        | LOGICAL_OPERATOR('tidak') <factor>
+		"""
+		children = node.children
+		
+		if not children:
+			raise NotImplementedError("empty factor")
+		
+		first_child = children[0]
+		
+		if first_child.label == "NUMBER" and first_child.token:
+			return NumberLiteral(value=first_child.token.value, token=first_child.token)
+		
+		if first_child.label == "STRING_LITERAL" and first_child.token:
+			return StringLiteral(value=first_child.token.value, token=first_child.token)
+		
+		if first_child.label == "CHAR_LITERAL" and first_child.token:
+			return CharLiteral(value=first_child.token.value, token=first_child.token)
+		
+		if first_child.label == "BOOLEAN_LITERAL" and first_child.token:
+			val = first_child.token.value.lower() == "true"
+			return BooleanLiteral(value=val, token=first_child.token)
+		
+		if first_child.label == "LOGICAL_OPERATOR" and first_child.token:
+			if first_child.token.value.lower() == "tidak":
+				if len(children) < 2 or children[1].label != "<factor>":
+					raise NotImplementedError("'tidak' without factor")
+				operand = self._build_factor(children[1])
+				return UnaryOp(op="tidak", operand=operand, token=first_child.token)
+		
+		if first_child.label == "LPARENTHESIS":
+			expr_node = next((c for c in children if c.label == "<expression>"), None)
+			if not expr_node:
+				raise NotImplementedError("parenthesized factor without expression")
+			return self._build_expression(expr_node)
+		
+		if first_child.label == "<procedure-function-call>":
+			return self._build_call_expr(first_child)
+		
+		if first_child.label == "IDENTIFIER" and first_child.token:
+			return VarRef(name=first_child.token.value, token=first_child.token)
+		
+		raise NotImplementedError(f"unhandled factor type: {first_child.label}")
 
 	def _build_call_expr(self, node: Node) -> CallExpr:
-		raise NotImplementedError
+		"""
+		Build CallExpr from <procedure-function-call>
+		"""
+		name = ""
+		args: list[Expression] = []
+		ident_token = None
+		
+		for child in node.children:
+			if child.label == "IDENTIFIER" and child.token:
+				name = child.token.value
+				ident_token = child.token
+			elif child.label == "<parameter-list>":
+				for param_child in child.children:
+					if param_child.label == "<expression>":
+						try:
+							arg_expr = self._build_expression(param_child)
+							args.append(arg_expr)
+						except NotImplementedError:
+							pass
+		
+		return CallExpr(name=name, args=args, token=ident_token)
 
-	def _collect_identifier_list(self, node: Node) -> list[str]:
-		raise NotImplementedError
+	def _collect_identifier_list(self, node: Node) -> List[str]:
+		"""
+		Collect identifier strings from <identifier-list>
+		"""
+		identifiers = []
+		for child in node.children:
+			if child.label == "IDENTIFIER" and child.token:
+				identifiers.append(child.token.value)
+		return identifiers

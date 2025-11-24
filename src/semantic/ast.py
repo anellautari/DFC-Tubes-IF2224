@@ -10,7 +10,6 @@ from src.common.pascal_token import Token
 @dataclass
 class ASTNode:
 	"""Base AST node carrying source token and semantic placeholders."""
-
 	token: Token | None = None
 	type_info: Any | None = None
 	symbol: Any | None = None
@@ -23,6 +22,8 @@ class Statement(ASTNode):
 
 class Expression(ASTNode):
 	"""Marker base class for expression nodes."""
+	type_code: int | None = None
+	is_constant: bool = False
 
 
 class TypeExpr(ASTNode):
@@ -180,17 +181,25 @@ class UnaryOp(Expression):
 @dataclass
 class VarRef(Expression):
 	name: str = ""
+	symbol: int = 0  # index di symbol table
 
 
 @dataclass
 class NumberLiteral(Expression):
 	value: str = ""
-
-
+	evaluated_value: int | float | None = None
+	def __post_init__(self):
+		try :
+			if '.' in self.value:
+				self.evaluated_value = float(self.value)
+			else :
+				self.evaluated_value = int(self.value)
+		except ValueError :
+			self.evaluated_value = None
+	
 @dataclass
 class StringLiteral(Expression):
 	value: str = ""
-
 
 @dataclass
 class CharLiteral(Expression):
