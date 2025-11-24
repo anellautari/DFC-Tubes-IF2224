@@ -22,6 +22,7 @@ class TypeKind(str, Enum):
     CHARS = "chars"
     ARRAYS = "arrays"
     RECORDS = "records"
+    STRINGS = "strings"
 
 
 # ============= TAB (identifier table) =============

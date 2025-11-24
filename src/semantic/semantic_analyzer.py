@@ -214,8 +214,8 @@ class SemanticAnalyzer:
 
     def visit_CharLiteral(self, node: CharLiteral):
         node.is_constant = True
-        node.type = TypeKind.CHAR
-        return TypeKind.CHAR
+        node.type = TypeKind.CHARS
+        return TypeKind.CHARS
 
     def visit_BooleanLiteral(self, node: BooleanLiteral):
         node.is_constant = True
