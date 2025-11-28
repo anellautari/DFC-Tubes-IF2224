@@ -1,5 +1,5 @@
 from src.semantic.ast import *
-from src.semantic.symbol_table import SymbolTables, TypeKind
+from src.semantic.symbol_table import SymbolTables, TypeKind, ObjectKind
 from src.common.errors import SemanticError
 
 class SemanticAnalyzer:
@@ -14,24 +14,19 @@ class SemanticAnalyzer:
         return fn(node)
 
     # ================== GENERIC VISIT ==================
-    # Penting: Jangan traverse otomatis. Semua visit harus eksplisit.
     def generic_visit(self, node):
         return
 
     # ================== PROGRAM ==================
     def visit_Program(self, node: Program):
-        # Pastikan program hanya diproses sekali
         if self._program_visited:
             return
         self._program_visited = True
 
-        # Insert program name pada global scope (level 0)
         self.symtab.insert(node.name, "program", type_code=0)
 
-        # Masuk main program block (level 1)
         node.scope_level = self.symtab.level
 
-        # Visit block isi program
         self.visit(node.block)
 
 
@@ -59,23 +54,80 @@ class SemanticAnalyzer:
 
     # ================== DECLARATIONS ==================
     def visit_VarDecl(self, node: VarDecl):
+        var_type = None
+
+        if isinstance(node.type_expr, PrimitiveType):
+            nm = node.type_expr.name.lower()
+            if nm == "integer":
+                var_type = TypeKind.INTS
+            elif nm == "real":
+                var_type = TypeKind.REALS
+            elif nm == "boolean":
+                var_type = TypeKind.BOOLS
+            elif nm == "char":
+                var_type = TypeKind.CHARS
+
+        elif isinstance(node.type_expr, NamedType):
+            ref_idx = self.symtab.lookup(node.type_expr.name)
+            var_type = TypeKind.NOTYP 
+        else:
+            var_type = TypeKind.NOTYP
+
         for name in node.names:
             idx = self.symtab.insert(name, "variable", 0)
+            entry = self.symtab.tab[idx]
+            entry.typ = var_type    
             node.symbol = idx
             node.scope_level = self.symtab.level
 
+
     def visit_ConstDecl(self, node: ConstDecl):
-        value = None
+        const_type = None
+        const_value = None
+
         if node.value:
-            value = self.visit(node.value)
-        idx = self.symtab.insert(node.name, "constant", type_code=0, adr=value)
+            const_type = self.visit(node.value)    
+            if hasattr(node.value, "value"):
+                const_value = node.value.value     
+            node.value.type = const_type
+
+        idx = self.symtab.insert(
+            node.name,
+            "constant",
+            type_code=0,    
+            adr=const_value
+        )
+
+        entry = self.symtab.tab[idx]
+        entry.typ = const_type if const_type is not None else TypeKind.NOTYP
+
         node.symbol = idx
         node.scope_level = self.symtab.level
 
+
     def visit_TypeDecl(self, node: TypeDecl):
         idx = self.symtab.insert(node.name, "type", type_code=0)
+        entry = self.symtab.tab[idx]
+
+        if isinstance(node.type_expr, PrimitiveType):
+            name = node.type_expr.name.lower()
+            if name == "integer":
+                entry.typ = TypeKind.INTS
+            elif name == "real":
+                entry.typ = TypeKind.REALS
+            elif name == "boolean":
+                entry.typ = TypeKind.BOOLS
+            elif name == "char":
+                entry.typ = TypeKind.CHARS
+
+        elif isinstance(node.type_expr, NamedType):
+            entry.typ = TypeKind.NOTYP
+            entry.ref = self.symtab.lookup(node.type_expr.name)
+
+        elif isinstance(node.type_expr, ArrayType):
+            entry.typ = TypeKind.ARRAYS
+
         node.symbol = idx
-        node.scope_level = self.symtab.level
 
     # ================== PROCEDURE ==================
     def visit_ProcedureDecl(self, node: ProcedureDecl):
@@ -99,12 +151,51 @@ class SemanticAnalyzer:
         self.symtab.end_block()
 
     # ================== FUNCTION ==================
+    def visit_Param(self, node: Param):
+        idx = self.symtab.insert(node.name, "variable", 0)
+        entry = self.symtab.tab[idx]
+        entry.typ = TypeKind.NOTYP   
+        entry.nrm = True
+        node.symbol = idx
+        node.scope_level = self.symtab.level
+
+        if isinstance(node.type_expr, PrimitiveType):
+            nm = node.type_expr.name.lower()
+            if nm == "integer":
+                entry.typ = TypeKind.INTS
+            elif nm == "real":
+                entry.typ = TypeKind.REALS
+            elif nm == "boolean":
+                entry.typ = TypeKind.BOOLS
+            elif nm == "char":
+                entry.typ = TypeKind.CHARS
+
+
     def visit_FunctionDecl(self, node: FunctionDecl):
         func_idx = self.symtab.insert(node.name, "function", 0)
+        func_entry = self.symtab.tab[func_idx]
         node.symbol = func_idx
+
+        ret_type = None
+        if isinstance(node.return_type, PrimitiveType):
+            nm = node.return_type.name.lower()
+            if nm == "integer":
+                ret_type = TypeKind.INTS
+            elif nm == "real":
+                ret_type = TypeKind.REALS
+            elif nm == "char":
+                ret_type = TypeKind.CHARS
+            elif nm == "boolean":
+                ret_type = TypeKind.BOOLS
+
+        func_entry.typ = ret_type
 
         self.symtab.begin_block()
         node.scope_level = self.symtab.level
+
+        implicit_idx = self.symtab.insert(node.name, "variable", 0)
+        implicit_entry = self.symtab.tab[implicit_idx]
+        implicit_entry.typ = ret_type
 
         for p in node.params:
             self.visit(p)
@@ -124,22 +215,24 @@ class SemanticAnalyzer:
         var_idx = self.symtab.lookup(var_name)
         
         if var_idx is None:
-            raise SemanticError(f"Variable '{var_name}' not declared.", node.token)
+            raise SemanticError(f"Variable '{var_name}' not declared.")
             
         var_entry = self.symtab.tab[var_idx]
         
-        if var_entry.obj != "variable" and var_entry.obj != "function":
-             raise SemanticError(f"Cannot assign to '{var_name}' because it is a {var_entry.obj}.", node.token)
+        if var_entry.obj not in (ObjectKind.VARIABLE, ObjectKind.FUNCTION):
+            raise SemanticError(
+                f"Cannot assign to '{var_name}' because it is a {var_entry.obj}.",
+            )
 
         expr_type = self.visit(node.value)
         
         if expr_type and var_entry.typ != expr_type:
-           raise SemanticError(f"Type mismatch in assignment. Cannot assign {expr_type} to variable '{var_name}' of type {var_entry.typ}.", node.token)
+           raise SemanticError(f"Type mismatch in assignment. Cannot assign {expr_type} to variable '{var_name}' of type {var_entry.typ}.")
 
     def visit_IfStmt(self, node: IfStmt):
         condition_type = self.visit(node.condition)
         if condition_type is not None and condition_type != TypeKind.BOOLS:
-            raise SemanticError("If condition must be of boolean expression.", node.token)
+            raise SemanticError("If condition must be of boolean expression.")
             
         self.visit(node.then_branch)
         if node.else_branch:
@@ -148,7 +241,7 @@ class SemanticAnalyzer:
     def visit_WhileStmt(self, node: WhileStmt):
         condition_type = self.visit(node.condition)
         if condition_type is not None and condition_type != TypeKind.BOOLS:
-            raise SemanticError("While condition must be of boolean expression.", node.token)
+            raise SemanticError("While condition must be of boolean expression.")
         
         self.visit(node.body)
 
@@ -157,21 +250,21 @@ class SemanticAnalyzer:
         var_idx = self.symtab.lookup(var_name)
         
         if var_idx is None:
-            raise SemanticError(f"Loop variable '{var_name}' not declared.", node.token)
+            raise SemanticError(f"Loop variable '{var_name}' not declared.")
             
         var_entry = self.symtab.tab[var_idx]
         if var_entry.typ != TypeKind.INTS:
-            raise SemanticError(f"For loop variable '{var_name}' must be of type integer.", node.token)
+            raise SemanticError(f"For loop variable '{var_name}' must be of type integer.")
         
         start_type = self.visit(node.start)
         end_type = self.visit(node.end)
 		
 		# Start dan End harus Integer
         if start_type is not None and start_type != TypeKind.INTS:
-            raise SemanticError("For loop start expression must be Integer.", node.token)
+            raise SemanticError("For loop start expression must be Integer.")
 			
         if end_type is not None and end_type != TypeKind.INTS:
-            raise SemanticError("For loop end expression must be Integer.", node.token)
+            raise SemanticError("For loop end expression must be Integer.")
 			
         self.visit(node.body)
 
@@ -180,12 +273,12 @@ class SemanticAnalyzer:
         proc_idx = self.symtab.lookup(proc_name)
         
         if proc_idx is None:
-            raise SemanticError(f"Procedure '{proc_name}' not declared.", node.token)
+            raise SemanticError(f"Procedure '{proc_name}' not declared.")
             
         proc_entry = self.symtab.tab[proc_idx]
         
         if proc_entry.obj != "procedure":
-            raise SemanticError(f"'{proc_name}' is not a procedure.", node.token)
+            raise SemanticError(f"'{proc_name}' is not a procedure.")
             
         # Validasi Argumen
         for arg in node.args:
@@ -256,12 +349,17 @@ class SemanticAnalyzer:
                 self.visit(arg)
         
     def visit_VarRef(self, node: VarRef):
-        entry = self.symtab.lookup(node.name)
-        if entry:
-            if entry['kind'] == 'constant':
-                return entry.get('adr')
-        
-        return None
+        idx = self.symtab.lookup(node.name)
+        if idx is None:
+            raise SemanticError(f"Undefined identifier '{node.name}'")
+
+        entry = self.symtab.tab[idx]
+
+        node.symbol = idx
+        node.scope_level = entry.lev
+        node.type = entry.typ
+
+        return entry.typ
 
     # =============== LITERALS ===============
     def visit_NumberLiteral(self, node: NumberLiteral):
@@ -275,8 +373,8 @@ class SemanticAnalyzer:
 
     def visit_StringLiteral(self, node: StringLiteral):
         node.is_constant = True
-        node.type = TypeKind.STRING
-        return TypeKind.STRING
+        node.type = TypeKind.STRINGS
+        return TypeKind.STRINGS
 
     def visit_CharLiteral(self, node: CharLiteral):
         node.is_constant = True
