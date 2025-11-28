@@ -58,7 +58,7 @@ class Parser:
         # Aturan grammar:
         # <program> ::= <program-header> <declaration-part> <compound-statement> DOT
         
-        print("\nSTART PARSING...\n")
+        # print("\nSTART PARSING...\n")
 
         program_node = Node("<program>")
 
@@ -78,13 +78,11 @@ class Parser:
         if dot_token:
             program_node.add_children(Node("DOT", dot_token))
             
-        program_node.print_tree()
+        # program_node.print_tree()
 
-        print("\nFINISH PARSING...")
+        # print("\nFINISH PARSING...")
         return program_node
-        
-    
-    # === STUB FUNGSI GRAMMAR LEVEL 2 ===
+
     def parse_program_header(self):
         """
         <program-header> ::= 'program' <identifier> ';'
