@@ -531,37 +531,40 @@ class ASTBuilder:
 		return left
 
 	def _build_term(self, node: Node) -> Expression:
-		"""
-		term -> <factor> { <multiplicative-operator> <factor> }
-		"""
 		children = node.children
-		
-		if not children or children[0].label != "<factor>":
-			raise NotImplementedError("term without factor")
-		
-		left = self._build_factor(children[0])
-		i = 1
-		
-		while i < len(children):
-			if children[i].label != "<multiplicative-operator>":
-				break
-			
-			op_node = children[i]
-			if op_node.children and op_node.children[0].token:
-				op = op_node.children[0].token.value
-			else:
-				op = "*"
-			
-			i += 1
-			
-			if i >= len(children) or children[i].label != "<factor>":
-				break
-			
-			right = self._build_factor(children[i])
-			left = BinOp(op=op, left=left, right=right, token=op_node.token)
-			i += 1
-		
-		return left
+
+		if not children:
+			raise NotImplementedError("empty term")
+
+		if children[0].label == "<factor>":
+			left = self._build_factor(children[0])
+			i = 1
+
+			while i < len(children):
+				if children[i].label != "<multiplicative-operator>":
+					break
+				op_node = children[i]
+				op = op_node.children[0].token.value if op_node.children else "*"
+				i += 1
+				right = self._build_factor(children[i])
+				left = BinOp(op=op, left=left, right=right, token=op_node.token)
+				i += 1
+			return left
+
+		first = children[0]
+
+		if first.label in ["NUMBER", "STRING_LITERAL", "CHAR_LITERAL", "BOOLEAN_LITERAL", "IDENTIFIER",
+						"<procedure-function-call>"]:
+			# treat whole <term> as a factor
+			fake_factor = Node("<factor>")
+			fake_factor.children = [first]
+			return self._build_factor(fake_factor)
+
+		for c in children:
+			if c.label == "<factor>":
+				return self._build_factor(c)
+
+		raise NotImplementedError("term without factor (parser shape not matched)")
 
 	def _build_factor(self, node: Node) -> Expression:
 		"""
@@ -608,8 +611,10 @@ class ASTBuilder:
 		
 		if first_child.label == "<procedure-function-call>":
 			return self._build_call_expr(first_child)
-		
-		if first_child.label == "IDENTIFIER" and first_child.token:
+
+		if first_child.label == "IDENTIFIER":
+			if len(children) >= 3 and children[1].label == "LPARENTHESIS":
+				return self._build_call_expr(node)
 			return VarRef(name=first_child.token.value, token=first_child.token)
 		
 		raise NotImplementedError(f"unhandled factor type: {first_child.label}")
