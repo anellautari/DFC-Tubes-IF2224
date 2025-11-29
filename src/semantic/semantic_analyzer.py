@@ -54,7 +54,7 @@ class SemanticAnalyzer:
 
     # ================== DECLARATIONS ==================
     def visit_VarDecl(self, node: VarDecl):
-        var_type = None
+        var_type: TypeKind = TypeKind.NOTYP
 
         if isinstance(node.type_expr, PrimitiveType):
             nm = node.type_expr.name.lower()
@@ -76,12 +76,17 @@ class SemanticAnalyzer:
         for name in node.names:
             idx = self.symtab.insert(name, "variable", 0)
             entry = self.symtab.tab[idx]
+            entry.adr = self.symtab.dx
+            
             if isinstance(node.type_expr, ArrayType):
                 aref = self._build_array_type(node.type_expr)
                 entry.typ = TypeKind.ARRAYS
                 entry.ref = aref
+                self.symtab.dx += self.symtab.get_variable_size(TypeKind.ARRAYS, aref)
             else:
                 entry.typ = var_type
+                self.symtab.dx += self.symtab.get_variable_size(var_type)
+            
             node.symbol = idx
             node.scope_level = self.symtab.level
 
@@ -146,9 +151,10 @@ class SemanticAnalyzer:
         self.symtab.begin_block()
         node.scope_level = self.symtab.level
 
-        # Visit parameter (belum implement param → skip)
+        # Visit parameter
         for p in node.params:
             self.visit(p)
+        self.symtab.mark_parameter_section_end()
 
         # Visit isi block
         if node.block:
@@ -161,6 +167,9 @@ class SemanticAnalyzer:
     def visit_Param(self, node: Param):
         idx = self.symtab.insert(node.name, "variable", 0)
         entry = self.symtab.tab[idx]
+        
+        entry.adr = self.symtab.dx
+        
         entry.typ = TypeKind.NOTYP   
         entry.nrm = True
         node.symbol = idx
@@ -176,6 +185,8 @@ class SemanticAnalyzer:
                 entry.typ = TypeKind.BOOLS
             elif nm == "char":
                 entry.typ = TypeKind.CHARS
+        
+        self.symtab.dx += self.symtab.get_variable_size(entry.typ)
 
 
     def visit_FunctionDecl(self, node: FunctionDecl):
@@ -183,7 +194,7 @@ class SemanticAnalyzer:
         func_entry = self.symtab.tab[func_idx]
         node.symbol = func_idx
 
-        ret_type = None
+        ret_type: TypeKind = TypeKind.NOTYP
         if isinstance(node.return_type, PrimitiveType):
             nm = node.return_type.name.lower()
             if nm == "integer":
@@ -203,9 +214,13 @@ class SemanticAnalyzer:
         implicit_idx = self.symtab.insert(node.name, "variable", 0)
         implicit_entry = self.symtab.tab[implicit_idx]
         implicit_entry.typ = ret_type
+        implicit_entry.adr = self.symtab.dx
+        self.symtab.dx += self.symtab.get_variable_size(ret_type)
 
         for p in node.params:
             self.visit(p)
+
+        self.symtab.mark_parameter_section_end()
 
         if node.block:
             self.visit(node.block)

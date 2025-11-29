@@ -44,10 +44,10 @@ class TabEntry:
 # ============= BTAB (block table) =============
 @dataclass
 class BTabEntry:
-    last: int = 0  # last identifier in this block
-    lpar: int = 0  # last parameter index (future use)
-    psze: int = 0  # size of parameters
-    vsze: int = 0  # size of local variables
+    last: int = 0   # last identifier
+    lpar: int = 0   # last parameter index
+    psze: int = 0   # parameter Size
+    vsze: int = 0   # variable Size
 
 
 # ============= ATAB (array type table) =============
@@ -69,6 +69,7 @@ class SymbolTables:
         self.atab: List[ATabEntry] = []
         self.display: List[int] = []  # static chain: display[level] -> btab index
         self.level: int = 0
+        self.dx: int = 0  # Data index: tracks memory allocation offset
 
         self._init_standard_identifiers()
 
@@ -152,6 +153,11 @@ class SymbolTables:
 
     # ============= Scope Management =============
     def begin_block(self) -> int:
+        """Begin a new block (procedure, function, or record).
+        
+        Increments scope level, creates new btab entry, and resets data index for this scope.
+        Returns the block index in the btab.
+        """
         self.level += 1
         block_index = len(self.btab)
         self.btab.append(BTabEntry())
@@ -161,9 +167,20 @@ class SymbolTables:
         else:
             self.display[self.level] = block_index
 
+        # Reset data index for new scope: start after return address (1), static link (1), dynamic link (1)
+        self.dx = 3
+        
         return block_index
 
     def end_block(self):
+        """End the current block and finalize size calculation.
+        
+        Sets the vsize (total variable size) for this block in btab before exiting.
+        """
+        block_idx = self.display[self.level]
+        # vsize is the total size needed for this block
+        self.btab[block_idx].vsze = self.dx
+        
         self.display[self.level] = 0
         self.level -= 1
 
@@ -212,6 +229,33 @@ class SymbolTables:
         entry.ref = ref
         entry.nrm = bool(nrm)
         return idx
+
+    # ============= Parameter/Variable Boundary Tracking =============
+    def mark_parameter_section_end(self) -> None:
+        """Mark the end of the parameter section for the current block.
+        
+        After all parameters are inserted, call this to record:
+        - The index of the last parameter in the symbol table (lastpar)
+        - The parameter size (psize) - memory occupied by parameters only
+        
+        After this, inserted identifiers are treated as local variables.
+        """
+        block_idx = self.display[self.level]
+        block = self.btab[block_idx]
+        
+        # lastpar points to the last parameter in the symbol table chain
+        block.lpar = block.last
+        
+        # psize is the current dx value (memory used by parameters)
+        block.psze = self.dx
+    
+    def get_variable_size(self, typ: TypeKind, ref: int = 0) -> int:
+        """Get the memory size in words for a variable of given type.
+        
+        Used to increment dx when allocating space for variables during
+        semantic analysis.
+        """
+        return self.get_elem_size(typ, ref)
 
     # ============= Lookup (loc) =============
     def loc(self, ident: str) -> int:
