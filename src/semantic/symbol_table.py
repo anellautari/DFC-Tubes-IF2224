@@ -232,3 +232,51 @@ class SymbolTables:
             return self.loc(ident)
         except SemanticError:
             return None
+
+    # ============= Array Table (ATAB) helpers =============
+    def enter_array(self, inx_type: TypeKind, low: int, high: int) -> int:
+        """Create a new array type entry with index type and bounds.
+
+        Returns the array type reference index (to be stored in `tab.ref`).
+        """
+        if low is None or high is None:
+            raise SemanticError("Array bounds must be constants")
+        if low > high:
+            raise SemanticError("Invalid array range: low > high")
+
+        entry = ATabEntry(
+            xtyp=inx_type,
+            etyp=TypeKind.NOTYP,
+            eref=0,
+            low=low,
+            high=high,
+            elsz=0,
+            size=0,
+        )
+        self.atab.append(entry)
+        return len(self.atab) - 1
+
+    def finalize_array(self, aref: int, elem_type: TypeKind, elem_ref: int, elem_size: int) -> None:
+        """Finalize an existing array entry with element information and compute size."""
+        if aref < 0 or aref >= len(self.atab):
+            raise SemanticError("Invalid array reference")
+        a = self.atab[aref]
+        a.etyp = elem_type
+        a.eref = elem_ref
+        a.elsz = max(1, int(elem_size))
+        a.size = (a.high - a.low + 1) * a.elsz
+
+    def get_elem_size(self, t: TypeKind, ref: int = 0) -> int:
+        """Return element size in words for a given type.
+
+        Primitive types use unit size (1). Arrays use their computed total size
+        when used as an element (for proper stride on nested arrays).
+        """
+        if t in (TypeKind.INTS, TypeKind.REALS, TypeKind.BOOLS, TypeKind.CHARS, TypeKind.STRINGS):
+            return 1
+        if t == TypeKind.ARRAYS:
+            if ref < 0 or ref >= len(self.atab):
+                raise SemanticError("Invalid array ref for size computation")
+            return self.atab[ref].size
+        # Records not implemented; treat as unit for now
+        return 1

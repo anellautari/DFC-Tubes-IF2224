@@ -76,7 +76,12 @@ class SemanticAnalyzer:
         for name in node.names:
             idx = self.symtab.insert(name, "variable", 0)
             entry = self.symtab.tab[idx]
-            entry.typ = var_type    
+            if isinstance(node.type_expr, ArrayType):
+                aref = self._build_array_type(node.type_expr)
+                entry.typ = TypeKind.ARRAYS
+                entry.ref = aref
+            else:
+                entry.typ = var_type
             node.symbol = idx
             node.scope_level = self.symtab.level
 
@@ -125,7 +130,9 @@ class SemanticAnalyzer:
             entry.ref = self.symtab.lookup(node.type_expr.name)
 
         elif isinstance(node.type_expr, ArrayType):
+            aref = self._build_array_type(node.type_expr)
             entry.typ = TypeKind.ARRAYS
+            entry.ref = aref
 
         node.symbol = idx
 
@@ -204,6 +211,77 @@ class SemanticAnalyzer:
             self.visit(node.block)
 
         self.symtab.end_block()
+
+    # ================== ARRAY TYPE BUILDING ==================
+    def _type_from_primitive(self, prim: PrimitiveType):
+        nm = prim.name.lower()
+        if nm == "integer":
+            return TypeKind.INTS
+        if nm == "real":
+            return TypeKind.REALS
+        if nm == "boolean":
+            return TypeKind.BOOLS
+        if nm == "char":
+            return TypeKind.CHARS
+        return TypeKind.NOTYP
+
+    def _const_value(self, expr):
+        t = self.visit(expr)
+        if hasattr(expr, "evaluated_value") and expr.evaluated_value is not None:
+            try:
+                return int(expr.evaluated_value)
+            except Exception:
+                return None
+        if hasattr(expr, "value"):
+            v = expr.value
+            if t == TypeKind.CHARS and isinstance(v, str) and len(v) == 1:
+                return ord(v)
+            if isinstance(v, bool):
+                return int(bool(v))
+            try:
+                return int(v)
+            except Exception:
+                return None
+        return None
+
+    def _index_type_from_bounds(self, lt: TypeKind, ut: TypeKind) -> TypeKind:
+        if lt == ut == TypeKind.INTS:
+            return TypeKind.INTS
+        if lt == ut == TypeKind.CHARS:
+            return TypeKind.CHARS
+        return TypeKind.NOTYP
+
+    def _build_array_type(self, arr: ArrayType) -> int:
+        idx_range = arr.index_range
+        if idx_range is None:
+            raise SemanticError("Array type requires index range")
+        ltype = self.visit(idx_range.lower) if idx_range.lower else None
+        utype = self.visit(idx_range.upper) if idx_range.upper else None
+        inx_type = self._index_type_from_bounds(ltype, utype)
+        low = self._const_value(idx_range.lower)
+        high = self._const_value(idx_range.upper)
+        aref = self.symtab.enter_array(inx_type, low, high)
+
+        elem_t = TypeKind.NOTYP
+        elem_ref = 0
+        elem_size = 1
+        if isinstance(arr.element_type, PrimitiveType):
+            elem_t = self._type_from_primitive(arr.element_type)
+            elem_size = self.symtab.get_elem_size(elem_t)
+        elif isinstance(arr.element_type, ArrayType):
+            elem_ref = self._build_array_type(arr.element_type)
+            elem_t = TypeKind.ARRAYS
+            elem_size = self.symtab.get_elem_size(elem_t, elem_ref)
+        elif isinstance(arr.element_type, NamedType):
+            ref_idx = self.symtab.lookup(arr.element_type.name)
+            if ref_idx is not None:
+                ref_entry = self.symtab.tab[ref_idx]
+                elem_t = ref_entry.typ
+                elem_ref = ref_entry.ref
+                elem_size = self.symtab.get_elem_size(elem_t, elem_ref)
+
+        self.symtab.finalize_array(aref, elem_t, elem_ref, elem_size)
+        return aref
 
     # ================== STATEMENTS ==================
     def visit_CompoundStmt(self, node: CompoundStmt):
