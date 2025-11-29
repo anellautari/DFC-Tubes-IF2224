@@ -24,6 +24,9 @@ class TypeKind(str, Enum):
     RECORDS = "records"
     STRINGS = "strings"
 
+    def __str__(self):
+        return self.value
+
 
 # ============= TAB (identifier table) =============
 @dataclass
