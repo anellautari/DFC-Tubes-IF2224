@@ -818,6 +818,11 @@ class Parser:
         if tok.token_type in ("NUMBER", "CHAR_LITERAL", "STRING_LITERAL"):
             node.add_children(Node(tok.token_type, self.consume_token()))
             return node
+        
+        # handle Boolean Literal (true/false) 
+        if tok.token_type == "KEYWORD" and tok.value.lower() in ("true", "false"):
+            node.add_children(Node("BOOLEAN_LITERAL", self.consume_token()))
+            return node
 
         if tok.token_type == "IDENTIFIER":
             # liat token kedua untuk memutuskan ini function call atau IDENTIFIER biasa

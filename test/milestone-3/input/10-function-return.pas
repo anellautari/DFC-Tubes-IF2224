@@ -1,5 +1,8 @@
 program CekReturnFungsi;
 
+variabel
+  hasil: integer;
+
 fungsi hitungLuas(sisi: integer): integer;
 mulai
   { Valid: integer assigned to integer function }
@@ -9,9 +12,6 @@ mulai
      { Error: Mencoba mengembalikan boolean pada fungsi bertipe integer }
      hitungLuas := false; 
 selesai;
-
-variabel
-  hasil: integer;
 
 mulai
   hasil := hitungLuas(5);
