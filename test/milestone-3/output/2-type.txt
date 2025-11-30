@@ -1,0 +1,7 @@
+
+============================================================
+ COMPILATION FAILED: SEMANTIC ERROR
+============================================================
+ Message  : [SemanticError] Type mismatch in assignment. Cannot assign bools to variable 'a' of type ints.
+============================================================
+

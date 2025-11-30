@@ -1,0 +1,62 @@
+ERROR:root:Syntax error: expected LPARENTHESIS((), but got LBRACKET([) @ 5:7
+ERROR:root:Syntax error: expected DOT(.), but got LBRACKET([) @ 5:7
+
+Semantic Analysis Successful.
+
+===== SYMBOL TABLES =====
+
+TAB (identifier table):
+idx | id           | obj        | typ        | ref | nrm | lev | adr    | link
+------------------------------------------------------------------------------
+0   |              | VARIABLE   | NOTYP      | 0   | 1   | 0   | 0      | 0   
+1   | false        | CONSTANT   | BOOLS      | 0   | 1   | 0   | 0      | 0   
+2   | true         | CONSTANT   | BOOLS      | 0   | 1   | 0   | 1      | 1   
+3   | real         | TYPE       | REALS      | 0   | 1   | 0   | 1      | 2   
+4   | char         | TYPE       | CHARS      | 0   | 1   | 0   | 1      | 3   
+5   | boolean      | TYPE       | BOOLS      | 0   | 1   | 0   | 1      | 4   
+6   | integer      | TYPE       | INTS       | 0   | 1   | 0   | 1      | 5   
+7   | abs          | FUNCTION   | REALS      | 0   | 1   | 0   | 0      | 6   
+8   | sqr          | FUNCTION   | REALS      | 0   | 1   | 0   | 2      | 7   
+9   | odd          | FUNCTION   | BOOLS      | 0   | 1   | 0   | 4      | 8   
+10  | chr          | FUNCTION   | CHARS      | 0   | 1   | 0   | 5      | 9   
+11  | ord          | FUNCTION   | INTS       | 0   | 1   | 0   | 6      | 10  
+12  | succ         | FUNCTION   | CHARS      | 0   | 1   | 0   | 7      | 11  
+13  | pred         | FUNCTION   | CHARS      | 0   | 1   | 0   | 8      | 12  
+14  | round        | FUNCTION   | INTS       | 0   | 1   | 0   | 9      | 13  
+15  | trunc        | FUNCTION   | INTS       | 0   | 1   | 0   | 10     | 14  
+16  | sin          | FUNCTION   | REALS      | 0   | 1   | 0   | 11     | 15  
+17  | cos          | FUNCTION   | REALS      | 0   | 1   | 0   | 12     | 16  
+18  | exp          | FUNCTION   | REALS      | 0   | 1   | 0   | 13     | 17  
+19  | ln           | FUNCTION   | REALS      | 0   | 1   | 0   | 14     | 18  
+20  | sqrt         | FUNCTION   | REALS      | 0   | 1   | 0   | 15     | 19  
+21  | arctan       | FUNCTION   | REALS      | 0   | 1   | 0   | 16     | 20  
+22  | eof          | FUNCTION   | BOOLS      | 0   | 1   | 0   | 17     | 21  
+23  | eoln         | FUNCTION   | BOOLS      | 0   | 1   | 0   | 18     | 22  
+24  | read         | PROCEDURE  | NOTYP      | 0   | 1   | 0   | 1      | 23  
+25  | readln       | PROCEDURE  | NOTYP      | 0   | 1   | 0   | 2      | 24  
+26  | write        | PROCEDURE  | NOTYP      | 0   | 1   | 0   | 3      | 25  
+27  | writeln      | PROCEDURE  | NOTYP      | 0   | 1   | 0   | 4      | 26  
+28  |              | PROCEDURE  | NOTYP      | 0   | 1   | 0   | 0      | 27  
+29  | CekArray     | VARIABLE   | NOTYP      | 0   | 1   | 0   | 0      | 28  
+30  | skor         | VARIABLE   | ARRAYS     | 0   | 1   | 0   | 0      | 29  
+
+BTAB (block table):
+idx | last | lpar | psze | vsze
+-------------------------------
+0   | 30   | 0    | 0    | 0   
+
+ATAB (array table):
+idx | xtyp   | etyp   | eref | low  | high | elsz | size
+--------------------------------------------------------
+0   | INTS   | INTS   | 0    | 1    | 3    | 1    | 3   
+
+===== DECORATED AST =====
+└── Program [name=CekArray]
+    └── Block
+        ├── VarDecl [symbol=30]
+        │   └── ArrayType
+        │       ├── RangeExpr
+        │       │   ├── NumberLiteral [type=ints]
+        │       │   └── NumberLiteral [type=ints]
+        │       └── PrimitiveType [name=integer]
+        └── CompoundStmt

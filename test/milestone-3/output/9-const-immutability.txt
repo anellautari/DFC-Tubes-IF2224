@@ -1,0 +1,7 @@
+
+============================================================
+ COMPILATION FAILED: SEMANTIC ERROR
+============================================================
+ Message  : [SemanticError] Cannot assign to 'BATAS' because it is a constant.
+============================================================
+
