@@ -144,9 +144,11 @@ class SemanticAnalyzer:
         # Insert procedure ke current scope
         proc_idx = self.symtab.insert(node.name, "procedure", 0)
         node.symbol = proc_idx
+        proc_entry = self.symtab.tab[proc_idx]
 
         # Masuk block prosedur
-        self.symtab.begin_block()
+        block_idx = self.symtab.begin_block()
+        proc_entry.ref = block_idx  # Store block reference for parameter lookup
         node.scope_level = self.symtab.level
 
         # Visit parameter
@@ -368,12 +370,55 @@ class SemanticAnalyzer:
             
         proc_entry = self.symtab.tab[proc_idx]
         
-        if proc_entry.obj != "procedure":
+        if proc_entry.obj != ObjectKind.PROCEDURE:
             raise SemanticError(f"'{proc_name}' is not a procedure.")
-            
-        # Validasi Argumen
+        
+        arg_types = []
         for arg in node.args:
-            self.visit(arg)
+            arg_type = self.visit(arg)
+            arg_types.append(arg_type)
+        
+        if proc_entry.ref == 0 and proc_entry.adr in (1, 2, 3, 4):
+            return
+        
+        param_types = self._get_procedure_param_types(proc_entry.ref)
+        
+        # Check argument count
+        if len(arg_types) != len(param_types):
+            raise SemanticError(
+                f"Procedure '{proc_name}' expects {len(param_types)} argument(s), but got {len(arg_types)}."
+            )
+        
+        # Check argument types match parameter types
+        for i, (arg_type, param_type) in enumerate(zip(arg_types, param_types)):
+            if arg_type != param_type:
+                if not (param_type == TypeKind.REALS and arg_type == TypeKind.INTS):
+                    raise SemanticError(
+                        f"Type mismatch in argument {i+1} of procedure '{proc_name}'. "
+                        f"Expected {param_type}, but got {arg_type}."
+                    )
+    
+    def _get_procedure_param_types(self, block_ref: int) -> list:
+        if block_ref <= 0 or block_ref >= len(self.symtab.btab):
+            return []
+        
+        block = self.symtab.btab[block_ref]
+        last_param = block.lpar
+        
+        if last_param == 0:
+            return []
+        
+        params = []
+        ptr = last_param
+        while ptr != 0:
+            entry = self.symtab.tab[ptr]
+            if entry.lev == self.symtab.level + 1 or entry.lev == block_ref:
+                params.append(entry.typ)
+            ptr = entry.link
+        
+        # Reverse to get correct order
+        params.reverse()
+        return params
 
     # =============== EXPRESSIONS ===============
     def visit_BinOp(self, node: BinOp):
