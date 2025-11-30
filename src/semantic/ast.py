@@ -127,7 +127,7 @@ class CompoundStmt(Statement):
 
 @dataclass
 class AssignStmt(Statement):
-	target: VarRef | None = None
+	target: "VarRef | ArrayAccess | None" = None
 	value: Expression | None = None
 
 
@@ -182,6 +182,13 @@ class UnaryOp(Expression):
 class VarRef(Expression):
 	name: str = ""
 	symbol: int = 0  # index di symbol table
+
+
+@dataclass
+class ArrayAccess(Expression):
+	"""Array element access: arr[index]"""
+	array: VarRef | None = None
+	index: Expression | None = None
 
 
 @dataclass

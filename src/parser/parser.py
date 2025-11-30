@@ -487,12 +487,15 @@ class Parser:
             elif kw == "mulai":
                 return self.parse_compound_statement()
         if tok.token_type == "IDENTIFIER":
-            # liat token kedua untuk memutuskan ini function call atau IDENTIFIER biasa
             next_tok_index = self.current_index + 1 
-            if next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "ASSIGN_OPERATOR":
-                return self.parse_assignment_statement()
-            else:
-                return self.parse_procedure_function_call()
+            if next_tok_index < len(self.tokens):
+                next_tok = self.tokens[next_tok_index]
+                if next_tok.token_type == "ASSIGN_OPERATOR":
+                    return self.parse_assignment_statement()
+                elif next_tok.token_type == "LBRACKET":
+                    # arr[index] := value
+                    return self.parse_assignment_statement()
+            return self.parse_procedure_function_call()
         self.error("statement", tok)
         return None
         
@@ -598,13 +601,24 @@ class Parser:
         return node
     
     def parse_assignment_statement(self):
-        # <assignment-statement> ::= IDENTIFIER ASSIGN_OPERATOR <expression>
+        # <assignment-statement> ::= IDENTIFIER [ '[' <expression> ']' ] ASSIGN_OPERATOR <expression>
         node = Node("<assignment-statement>")
         
         # IDENTIFIER
         ident = self.match_token("IDENTIFIER")
         if not ident: return None
         node.add_children(Node("IDENTIFIER", ident))
+        
+        # Optional array index
+        tok = self.peek()
+        if tok and tok.token_type == "LBRACKET":
+            node.add_children(Node("LBRACKET", self.consume_token()))
+            index_expr = self.parse_expression()
+            if index_expr:
+                node.add_children(index_expr)
+            rbracket = self.match_token("RBRACKET", "]")
+            if rbracket:
+                node.add_children(Node("RBRACKET", rbracket))
         
         # ASSIGN_OPERATOR
         op = self.match_token("ASSIGN_OPERATOR", ":=")
@@ -825,11 +839,21 @@ class Parser:
             return node
 
         if tok.token_type == "IDENTIFIER":
-            # liat token kedua untuk memutuskan ini function call atau IDENTIFIER biasa
+            # liat token kedua untuk memutuskan ini function call, array access, atau IDENTIFIER biasa
             next_tok_index = self.current_index + 1
             if next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "LPARENTHESIS":
-                # Unified procedure/function call node (Rev 2+3)
                 return self.parse_procedure_function_call()
+            elif next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "LBRACKET":
+                # Array element access: IDENTIFIER '[' <expression> ']'
+                node.add_children(Node("IDENTIFIER", self.consume_token()))
+                node.add_children(Node("LBRACKET", self.consume_token()))
+                index_expr = self.parse_expression()
+                if index_expr:
+                    node.add_children(index_expr)
+                rbracket = self.match_token("RBRACKET", "]")
+                if rbracket:
+                    node.add_children(Node("RBRACKET", rbracket))
+                return node
             else:
                 node.add_children(Node("IDENTIFIER", self.consume_token()))
                 return node

@@ -5,6 +5,7 @@ from src.common import node
 from src.common.node import Node
 from src.common.pascal_token import Token
 from src.semantic.ast import (
+	ArrayAccess,
 	ArrayType,
 	AssignStmt,
 	Block,
@@ -380,17 +381,39 @@ class ASTBuilder:
 		"""Build an AssignStmt from <assignment-statement> node.
   
 		Structure:
-		  IDENTIFIER ASSIGN_OPERATOR(:=) <expression>
+		  IDENTIFIER [ LBRACKET <expression> RBRACKET ] ASSIGN_OPERATOR(:=) <expression>
   		"""
 		if len(node.children) < 3 or node.children[0].token is None:
 			raise NotImplementedError("Malformed assignment node")
-		target_token = node.children[0].token
-		target_ref = VarRef(name=target_token.value, token=target_token)
-		assign_token = node.children[1].token
-		expr_node = node.children[2]
-		value_expr = self._build_expression(expr_node)
 		
-		return AssignStmt(target=target_ref, value=value_expr, token=assign_token)
+		target_token = node.children[0].token
+		i = 1
+		
+		index_expr = None
+		if i < len(node.children) and node.children[i].label == "LBRACKET":
+			i += 1
+			if i < len(node.children) and node.children[i].label == "<expression>":
+				index_expr = self._build_expression(node.children[i])
+				i += 1
+			if i < len(node.children) and node.children[i].label == "RBRACKET":
+				i += 1
+		
+		if index_expr is not None:
+			array_var = VarRef(name=target_token.value, token=target_token)
+			target = ArrayAccess(array=array_var, index=index_expr, token=target_token)
+		else:
+			target = VarRef(name=target_token.value, token=target_token)
+		
+		if i < len(node.children) and node.children[i].label == "ASSIGN_OPERATOR":
+			assign_token = node.children[i].token
+			i += 1
+		else:
+			assign_token = None
+		
+		expr_node = node.children[i] if i < len(node.children) else None
+		value_expr = self._build_expression(expr_node) if expr_node else None
+		
+		return AssignStmt(target=target, value=value_expr, token=assign_token)
 
 	def _build_proc_call_stmt(self, node: Node) -> ProcCallStmt:
 		"""Build a ProcCallStmt from <procedure-function-call> node.
@@ -615,6 +638,15 @@ class ASTBuilder:
 		if first_child.label == "IDENTIFIER":
 			if len(children) >= 3 and children[1].label == "LPARENTHESIS":
 				return self._build_call_expr(node)
+			elif len(children) >= 4 and children[1].label == "LBRACKET":
+				# Array access: IDENTIFIER '[' <expression> ']'
+				array_var = VarRef(name=first_child.token.value, token=first_child.token)
+				index_expr = None
+				for child in children:
+					if child.label == "<expression>":
+						index_expr = self._build_expression(child)
+						break
+				return ArrayAccess(array=array_var, index=index_expr, token=first_child.token)
 			return VarRef(name=first_child.token.value, token=first_child.token)
 		
 		raise NotImplementedError(f"unhandled factor type: {first_child.label}")

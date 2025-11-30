@@ -304,6 +304,9 @@ class SemanticAnalyzer:
             self.visit(stmt)
 
     def visit_AssignStmt(self, node: AssignStmt):
+        if isinstance(node.target, ArrayAccess):
+            return self._visit_array_assign(node)
+        
         var_name = node.target.name
         var_idx = self.symtab.lookup(var_name)
         
@@ -321,6 +324,35 @@ class SemanticAnalyzer:
         
         if expr_type and var_entry.typ != expr_type:
            raise SemanticError(f"Type mismatch in assignment. Cannot assign {expr_type} to variable '{var_name}' of type {var_entry.typ}.")
+    
+    def _visit_array_assign(self, node: AssignStmt):
+        array_access = node.target
+        array_name = array_access.array.name
+        
+        arr_idx = self.symtab.lookup(array_name)
+        if arr_idx is None:
+            raise SemanticError(f"Variable '{array_name}' not declared.")
+        
+        arr_entry = self.symtab.tab[arr_idx]
+        
+        if arr_entry.typ != TypeKind.ARRAYS:
+            raise SemanticError(f"Variable '{array_name}' is not an array.")
+        
+        index_type = self.visit(array_access.index)
+        if index_type is not None and index_type != TypeKind.INTS:
+            raise SemanticError(f"Array index must be of integer type, got {index_type}.")
+        
+        aref = arr_entry.ref
+        if aref < 0 or aref >= len(self.symtab.atab):
+            raise SemanticError(f"Invalid array reference for '{array_name}'.")
+        
+        elem_type = self.symtab.atab[aref].etyp
+        
+        expr_type = self.visit(node.value)
+        if expr_type and elem_type != expr_type:
+            raise SemanticError(
+                f"Type mismatch in array assignment. Cannot assign {expr_type} to array element of type {elem_type}."
+            )
 
     def visit_IfStmt(self, node: IfStmt):
         condition_type = self.visit(node.condition)
@@ -496,6 +528,30 @@ class SemanticAnalyzer:
         node.type = entry.typ
 
         return entry.typ
+    
+    def visit_ArrayAccess(self, node: ArrayAccess):
+        array_name = node.array.name
+        arr_idx = self.symtab.lookup(array_name)
+        
+        if arr_idx is None:
+            raise SemanticError(f"Variable '{array_name}' not declared.")
+        
+        arr_entry = self.symtab.tab[arr_idx]
+        
+        if arr_entry.typ != TypeKind.ARRAYS:
+            raise SemanticError(f"Variable '{array_name}' is not an array.")
+        
+        index_type = self.visit(node.index)
+        if index_type is not None and index_type != TypeKind.INTS:
+            raise SemanticError(f"Array index must be of integer type, got {index_type}.")
+        
+        aref = arr_entry.ref
+        if aref < 0 or aref >= len(self.symtab.atab):
+            raise SemanticError(f"Invalid array reference for '{array_name}'.")
+        
+        elem_type = self.symtab.atab[aref].etyp
+        node.type = elem_type
+        return elem_type
 
     # =============== LITERALS ===============
     def visit_NumberLiteral(self, node: NumberLiteral):
