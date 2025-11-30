@@ -23,8 +23,6 @@ class SemanticAnalyzer:
             return
         self._program_visited = True
 
-        self.symtab.insert(node.name, "program", type_code=0)
-
         node.scope_level = self.symtab.level
 
         self.visit(node.block)
