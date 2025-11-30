@@ -1,0 +1,75 @@
+ERROR:root:Syntax error: expected Variable declarations must appear before subprogram declarations., but got KEYWORD(variabel) @ 7:1
+
+Semantic Analysis Successful.
+
+===== SYMBOL TABLES =====
+
+TAB (identifier table):
+idx | id           | obj        | typ        | ref | nrm | lev | adr    | link
+------------------------------------------------------------------------------
+0   |              | VARIABLE   | NOTYP      | 0   | 1   | 0   | 0      | 0   
+1   | false        | CONSTANT   | BOOLS      | 0   | 1   | 0   | 0      | 0   
+2   | true         | CONSTANT   | BOOLS      | 0   | 1   | 0   | 1      | 1   
+3   | real         | TYPE       | REALS      | 0   | 1   | 0   | 1      | 2   
+4   | char         | TYPE       | CHARS      | 0   | 1   | 0   | 1      | 3   
+5   | boolean      | TYPE       | BOOLS      | 0   | 1   | 0   | 1      | 4   
+6   | integer      | TYPE       | INTS       | 0   | 1   | 0   | 1      | 5   
+7   | abs          | FUNCTION   | REALS      | 0   | 1   | 0   | 0      | 6   
+8   | sqr          | FUNCTION   | REALS      | 0   | 1   | 0   | 2      | 7   
+9   | odd          | FUNCTION   | BOOLS      | 0   | 1   | 0   | 4      | 8   
+10  | chr          | FUNCTION   | CHARS      | 0   | 1   | 0   | 5      | 9   
+11  | ord          | FUNCTION   | INTS       | 0   | 1   | 0   | 6      | 10  
+12  | succ         | FUNCTION   | CHARS      | 0   | 1   | 0   | 7      | 11  
+13  | pred         | FUNCTION   | CHARS      | 0   | 1   | 0   | 8      | 12  
+14  | round        | FUNCTION   | INTS       | 0   | 1   | 0   | 9      | 13  
+15  | trunc        | FUNCTION   | INTS       | 0   | 1   | 0   | 10     | 14  
+16  | sin          | FUNCTION   | REALS      | 0   | 1   | 0   | 11     | 15  
+17  | cos          | FUNCTION   | REALS      | 0   | 1   | 0   | 12     | 16  
+18  | exp          | FUNCTION   | REALS      | 0   | 1   | 0   | 13     | 17  
+19  | ln           | FUNCTION   | REALS      | 0   | 1   | 0   | 14     | 18  
+20  | sqrt         | FUNCTION   | REALS      | 0   | 1   | 0   | 15     | 19  
+21  | arctan       | FUNCTION   | REALS      | 0   | 1   | 0   | 16     | 20  
+22  | eof          | FUNCTION   | BOOLS      | 0   | 1   | 0   | 17     | 21  
+23  | eoln         | FUNCTION   | BOOLS      | 0   | 1   | 0   | 18     | 22  
+24  | read         | PROCEDURE  | NOTYP      | 0   | 1   | 0   | 1      | 23  
+25  | readln       | PROCEDURE  | NOTYP      | 0   | 1   | 0   | 2      | 24  
+26  | write        | PROCEDURE  | NOTYP      | 0   | 1   | 0   | 3      | 25  
+27  | writeln      | PROCEDURE  | NOTYP      | 0   | 1   | 0   | 4      | 26  
+28  |              | PROCEDURE  | NOTYP      | 0   | 1   | 0   | 0      | 27  
+29  | CekParameterProsedur | VARIABLE   | NOTYP      | 0   | 1   | 0   | 0      | 28  
+30  | n            | VARIABLE   | INTS       | 0   | 1   | 0   | 0      | 29  
+31  | printTwo     | PROCEDURE  | NOTYP      | 0   | 1   | 0   | 0      | 30  
+32  | x            | VARIABLE   | INTS       | 0   | 1   | 1   | 3      | 0   
+33  | s            | VARIABLE   | NOTYP      | 0   | 1   | 1   | 4      | 32  
+
+BTAB (block table):
+idx | last | lpar | psze | vsze
+-------------------------------
+0   | 31   | 0    | 0    | 0   
+1   | 33   | 33   | 5    | 5   
+
+ATAB (array table):
+idx | xtyp   | etyp   | eref | low  | high | elsz | size
+--------------------------------------------------------
+
+===== DECORATED AST =====
+└── Program [name=CekParameterProsedur]
+    └── Block
+        ├── VarDecl [symbol=30]
+        │   └── PrimitiveType [name=integer]
+        ├── ProcedureDecl [name=printTwo, symbol=31, lev=1]
+        │   ├── Param [name=x, symbol=32, lev=1]
+        │   │   └── PrimitiveType [name=integer]
+        │   ├── Param [name=s, symbol=33, lev=1]
+        │   │   └── NamedType [name=string]
+        │   └── Block
+        │       └── CompoundStmt
+        │           └── ProcCallStmt [name=writeln]
+        │               ├── VarRef [name=s, type=notyp, symbol=33, lev=1]
+        │               └── VarRef [name=x, type=ints, symbol=32, lev=1]
+        └── CompoundStmt
+            ├── AssignStmt
+            │   └── VarRef [name=n]
+            └── ProcCallStmt [name=printTwo]
+                ├── StringLiteral [type=strings]
+                └── VarRef [name=n, type=ints, symbol=30]

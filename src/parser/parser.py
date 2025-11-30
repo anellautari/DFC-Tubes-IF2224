@@ -58,7 +58,7 @@ class Parser:
         # Aturan grammar:
         # <program> ::= <program-header> <declaration-part> <compound-statement> DOT
         
-        print("\nSTART PARSING...\n")
+        # print("\nSTART PARSING...\n")
 
         program_node = Node("<program>")
 
@@ -78,13 +78,11 @@ class Parser:
         if dot_token:
             program_node.add_children(Node("DOT", dot_token))
             
-        program_node.print_tree()
+        # program_node.print_tree()
 
-        print("\nFINISH PARSING...")
+        # print("\nFINISH PARSING...")
         return program_node
-        
-    
-    # === STUB FUNGSI GRAMMAR LEVEL 2 ===
+
     def parse_program_header(self):
         """
         <program-header> ::= 'program' <identifier> ';'
@@ -118,6 +116,14 @@ class Parser:
         """
         node = Node("<declaration-part>")
 
+        # state machine:
+        # 0 = konstanta
+        # 1 = tipe
+        # 2 = variabel
+        # 3 = subprogram
+
+        state = 0
+
         while True:
             tok = self.peek()
             if not tok or tok.token_type != "KEYWORD":
@@ -125,28 +131,35 @@ class Parser:
 
             kw = tok.value.lower()
 
-            if kw == "konstanta":
+            if state == 0 and kw == "konstanta":
                 const_node = self.parse_const_declaration()
                 if const_node:
                     node.add_children(const_node)
                 continue
 
             if kw == "tipe":
+                if state > 1:
+                    self.error("Type declarations must appear before variable and subprogram declarations.", tok)
+                state = 1
                 type_decl = self.parse_type_declaration()
                 if type_decl:
                     node.add_children(type_decl)
                 continue
 
             if kw == "variabel":
+                if state > 2:
+                    self.error("Variable declarations must appear before subprogram declarations.", tok)
+                state = 2
                 var_decl = self.parse_var_declaration()
                 if var_decl:
                     node.add_children(var_decl)
                 continue
 
             if kw in ("prosedur", "fungsi"):
-                subprog = self.parse_subprogram_declaration()
-                if subprog:
-                    node.add_children(subprog)
+                state = 3
+                sub_node = self.parse_subprogram_declaration()
+                if sub_node:
+                    node.add_children(sub_node)
                 continue
 
             break
@@ -474,12 +487,15 @@ class Parser:
             elif kw == "mulai":
                 return self.parse_compound_statement()
         if tok.token_type == "IDENTIFIER":
-            # liat token kedua untuk memutuskan ini function call atau IDENTIFIER biasa
             next_tok_index = self.current_index + 1 
-            if next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "ASSIGN_OPERATOR":
-                return self.parse_assignment_statement()
-            else:
-                return self.parse_procedure_function_call()
+            if next_tok_index < len(self.tokens):
+                next_tok = self.tokens[next_tok_index]
+                if next_tok.token_type == "ASSIGN_OPERATOR":
+                    return self.parse_assignment_statement()
+                elif next_tok.token_type == "LBRACKET":
+                    # arr[index] := value
+                    return self.parse_assignment_statement()
+            return self.parse_procedure_function_call()
         self.error("statement", tok)
         return None
         
@@ -585,13 +601,24 @@ class Parser:
         return node
     
     def parse_assignment_statement(self):
-        # <assignment-statement> ::= IDENTIFIER ASSIGN_OPERATOR <expression>
+        # <assignment-statement> ::= IDENTIFIER [ '[' <expression> ']' ] ASSIGN_OPERATOR <expression>
         node = Node("<assignment-statement>")
         
         # IDENTIFIER
         ident = self.match_token("IDENTIFIER")
         if not ident: return None
         node.add_children(Node("IDENTIFIER", ident))
+        
+        # Optional array index
+        tok = self.peek()
+        if tok and tok.token_type == "LBRACKET":
+            node.add_children(Node("LBRACKET", self.consume_token()))
+            index_expr = self.parse_expression()
+            if index_expr:
+                node.add_children(index_expr)
+            rbracket = self.match_token("RBRACKET", "]")
+            if rbracket:
+                node.add_children(Node("RBRACKET", rbracket))
         
         # ASSIGN_OPERATOR
         op = self.match_token("ASSIGN_OPERATOR", ":=")
@@ -805,13 +832,28 @@ class Parser:
         if tok.token_type in ("NUMBER", "CHAR_LITERAL", "STRING_LITERAL"):
             node.add_children(Node(tok.token_type, self.consume_token()))
             return node
+        
+        # handle Boolean Literal (true/false) 
+        if tok.token_type == "KEYWORD" and tok.value.lower() in ("true", "false"):
+            node.add_children(Node("BOOLEAN_LITERAL", self.consume_token()))
+            return node
 
         if tok.token_type == "IDENTIFIER":
-            # liat token kedua untuk memutuskan ini function call atau IDENTIFIER biasa
+            # liat token kedua untuk memutuskan ini function call, array access, atau IDENTIFIER biasa
             next_tok_index = self.current_index + 1
             if next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "LPARENTHESIS":
-                # Unified procedure/function call node (Rev 2+3)
                 return self.parse_procedure_function_call()
+            elif next_tok_index < len(self.tokens) and self.tokens[next_tok_index].token_type == "LBRACKET":
+                # Array element access: IDENTIFIER '[' <expression> ']'
+                node.add_children(Node("IDENTIFIER", self.consume_token()))
+                node.add_children(Node("LBRACKET", self.consume_token()))
+                index_expr = self.parse_expression()
+                if index_expr:
+                    node.add_children(index_expr)
+                rbracket = self.match_token("RBRACKET", "]")
+                if rbracket:
+                    node.add_children(Node("RBRACKET", rbracket))
+                return node
             else:
                 node.add_children(Node("IDENTIFIER", self.consume_token()))
                 return node
